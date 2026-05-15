@@ -1,232 +1,137 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Layers, Search, Plus, MoreVertical, X, Edit, Eye, Trash2 } from 'lucide-react';
+import { 
+  Plus, Search, Filter, Edit3, Trash2, X, ChevronRight, 
+  Package, CheckCircle2, TrendingUp, Shapes, 
+  ArrowUpRight, Copy, Boxes
+} from 'lucide-react';
 
 const Assortments = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  
-  // New State for handling the Actions Dropdown
-  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
 
-  // 1. Static Data for Assortments/Bundles
-  const [assortmentsData, setAssortmentsData] = useState([
-    { id: 'AST-001', name: 'Premium Diwali Hamper', itemsCount: 12, basePrice: '₹3,500', discount: '15%', status: 'Active' },
-    { id: 'AST-002', name: 'Monthly Grocery Kit - Family', itemsCount: 45, basePrice: '₹6,200', discount: '10%', status: 'Active' },
-    { id: 'AST-003', name: 'Summer Drinks Bundle', itemsCount: 6, basePrice: '₹850', discount: '5%', status: 'Draft' },
-    { id: 'AST-004', name: 'Work From Home Tech Kit', itemsCount: 4, basePrice: '₹4,999', discount: '0%', status: 'Inactive' },
+  const [assortments, setAssortments] = useState([
+    { id: 'BNDL-771', name: 'Premium Diwali Hamper', group: 'Gifting', status: 'Active', price: 3500, margin: 18, items: ['Kaju Katli', 'Scented Candles', 'Ferrero Rocher', 'Diya Set'] },
+    { id: 'BNDL-882', name: 'Family Essentials Kit', group: 'Grocery', status: 'Active', price: 6200, margin: 12, items: ['Basmati Rice', 'Refined Oil', 'Sugar', 'Salt', 'Dals'] },
+    { id: 'BNDL-443', name: 'Student Tech Bundle', group: 'Electronics', status: 'Draft', price: 12500, margin: 15, items: ['Backpack', 'Mouse', 'Keyboard', 'USB Cable'] },
+    { id: 'BNDL-221', name: 'Gourmet Cheese Platter', group: 'Food', status: 'Active', price: 1800, margin: 22, items: ['Cheddar', 'Brie', 'Crackers', 'Olives'] },
   ]);
 
-  const [formData, setFormData] = useState({
-    name: '', itemsCount: '', basePrice: '', discount: ''
-  });
+  const filteredData = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return assortments.filter(a => 
+      (a.name.toLowerCase().includes(q) || a.id.toLowerCase().includes(q)) &&
+      (activeFilter === 'All' || a.group === activeFilter)
+    );
+  }, [assortments, searchTerm, activeFilter]);
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleAddSubmit = (e) => {
-    e.preventDefault();
-    const newId = `AST-00${assortmentsData.length + 1}`;
-    const newAssortment = {
-      id: newId,
-      name: formData.name,
-      itemsCount: parseInt(formData.itemsCount) || 0,
-      basePrice: `₹${formData.basePrice}`,
-      discount: formData.discount ? `${formData.discount}%` : '0%',
-      status: 'Active'
-    };
-
-    setAssortmentsData([newAssortment, ...assortmentsData]);
-    setShowAddModal(false);
-    setFormData({ name: '', itemsCount: '', basePrice: '', discount: '' });
-  };
-
-  // --- NEW: Delete Function ---
-  const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this assortment?");
-    if (confirmDelete) {
-      setAssortmentsData(assortmentsData.filter(item => item.id !== id));
-      setActiveDropdown(null); // Close dropdown after delete
-    }
-  };
-
-  const filteredData = assortmentsData.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const categories = ['All', 'Gifting', 'Grocery', 'Electronics', 'Food'];
 
   return (
-    <div className="space-y-6 relative" onClick={() => activeDropdown && setActiveDropdown(null)}>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        
-        {/* Top Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-teal-600/20 p-3 rounded-lg border border-teal-500/30">
-              <Layers className="text-teal-500" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Product Assortments</h2>
-              <p className="text-sm text-gray-500">Manage product bundles and collections</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-              <input
-                type="text"
-                placeholder="Search assortments..."
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-teal-500 text-white text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-teal-600 hover:bg-teal-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm whitespace-nowrap"
-            >
-              <Plus size={18} /> Add Assortment
-            </button>
-          </div>
+    <div className="space-y-6 pb-20 font-plus-jakarta">
+      
+      {/* 1. SLIM ANALYTICS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-[#11111a] p-6 rounded-3xl border border-white/5 shadow-xl flex justify-between items-center group">
+           <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">Architecture Count</p>
+              <h3 className="text-3xl font-extrabold text-white tracking-tighter">{assortments.length} <span className="text-xs text-gray-500 font-bold">Active</span></h3>
+           </div>
+           <div className="p-3 bg-teal-500/10 text-teal-500 rounded-2xl group-hover:scale-110 transition-transform"><Shapes size={20}/></div>
         </div>
-
-        {/* Data Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-visible shadow-lg">
-          <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#121212] border-b border-gray-800 text-gray-400 uppercase text-xs font-bold tracking-wider">
-                <tr>
-                  <th className="p-4">Assortment ID</th>
-                  <th className="p-4">Collection Name</th>
-                  <th className="p-4">Total Items</th>
-                  <th className="p-4">Base Price</th>
-                  <th className="p-4">Discount Applied</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredData.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 font-mono text-teal-400 font-medium">{item.id}</td>
-                    <td className="p-4 text-gray-200 font-bold">{item.name}</td>
-                    <td className="p-4 text-gray-300">{item.itemsCount} Products</td>
-                    <td className="p-4 text-gray-200 font-mono">{item.basePrice}</td>
-                    <td className="p-4 text-green-400 font-bold">{item.discount}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        item.status === 'Active' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                        item.status === 'Draft' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-                        'bg-red-500/10 text-red-500 border border-red-500/20'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center relative">
-                      
-                      {/* --- ACTION BUTTON --- */}
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevents the parent div from closing it immediately
-                          setActiveDropdown(activeDropdown === item.id ? null : item.id);
-                        }} 
-                        className="text-gray-500 hover:text-teal-500 transition-colors p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-
-                      {/* --- ACTION DROPDOWN MENU --- */}
-                      <AnimatePresence>
-                        {activeDropdown === item.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-10 top-4 w-36 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden"
-                            onClick={(e) => e.stopPropagation()} // Click inside menu shouldn't close it
-                          >
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Eye size={14} /> View Details
-                            </button>
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Edit size={14} /> Edit Bundle
-                            </button>
-                            <div className="border-t border-gray-800 my-1"></div>
-                            <button 
-                              onClick={() => handleDelete(item.id)}
-                              className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                    </td>
-                  </tr>
-                ))}
-                {filteredData.length === 0 && (
-                  <tr>
-                    <td colSpan="7" className="p-8 text-center text-gray-500">
-                      No assortments found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-[#11111a] p-6 rounded-3xl border border-white/5 shadow-xl flex justify-between items-center group">
+           <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">Net Margin Avg</p>
+              <h3 className="text-3xl font-extrabold text-white tracking-tighter">16.5%</h3>
+           </div>
+           <div className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform"><TrendingUp size={20}/></div>
         </div>
-      </motion.div>
+        <div className="bg-[#11111a] p-6 rounded-3xl border border-white/5 shadow-xl flex justify-between items-center group">
+           <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">Total Assets</p>
+              <h3 className="text-3xl font-extrabold text-white tracking-tighter">142 <span className="text-xs text-gray-500 font-bold">Units</span></h3>
+           </div>
+           <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform"><Boxes size={20}/></div>
+        </div>
+      </div>
 
-      {/* Add Assortment Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} 
-              className="relative bg-[#1a1a1a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden z-[110]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus size={20} className="text-teal-500"/> Create Assortment
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
+      {/* 2. REFINED TOOLBAR (STICKY FIX) */}
+      <div className="sticky top-[0px] z-30 py-2 bg-[#0d0d0d]">
+        <div className="bg-[#14141c]/95 backdrop-blur-2xl p-4 rounded-[28px] border border-white/10 flex flex-col lg:flex-row justify-between items-center gap-4 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+            <div className="relative flex-1 min-w-[320px] group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-teal-400 transition-colors" size={18} />
+              <input type="text" placeholder="Search Master ID or Profile Name..." className="w-full bg-black/40 border border-white/5 rounded-2xl pl-12 pr-4 py-3 text-xs text-white outline-none focus:border-teal-500/50" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
+            </div>
+            <div className="flex bg-black/50 p-1 rounded-xl border border-white/5">
+              {categories.slice(0,4).map(c => (
+                <button key={c} onClick={()=>setActiveFilter(c)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeFilter === c ? 'bg-teal-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}>{c}</button>
+              ))}
+            </div>
+          </div>
+          <button onClick={() => { setEditingItem(null); setShowModal(true); }} className="bg-white hover:bg-teal-400 text-black font-black px-6 py-3 rounded-2xl flex items-center gap-2 transition-all active:scale-95 shadow-xl text-xs tracking-widest">
+            <Plus size={18} strokeWidth={3}/> NEW ARCHITECTURE
+          </button>
+        </div>
+      </div>
+
+      {/* 3. CARD GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 mt-8">
+        {filteredData.map((a, idx) => (
+          <motion.div key={a.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="group relative">
+            <div className="absolute -top-3 left-10 w-28 h-8 bg-[#252533] rounded-t-2xl border-t border-x border-white/10 z-0"></div>
+            <div className="bg-[#1a1a24] rounded-[40px] border border-white/10 p-8 shadow-2xl relative z-10 hover:border-teal-500/30 transition-all duration-500 hover:shadow-teal-500/5">
+              <div className="flex justify-between items-start mb-8">
+                 <div className="p-3.5 bg-teal-500/10 rounded-2xl text-teal-400 border border-teal-500/20 group-hover:scale-110 transition-transform"><Shapes size={24} /></div>
+                 <div className="text-right">
+                    <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${a.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-gray-800 text-gray-500'}`}>{a.status}</span>
+                    <p className="text-[10px] text-gray-600 font-mono mt-2 uppercase tracking-tighter">{a.id}</p>
+                 </div>
               </div>
 
-              <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Collection Name</label>
-                  <input type="text" name="name" required value={formData.name} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none" placeholder="e.g. Winter Essentials" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Number of Items</label>
-                  <input type="number" name="itemsCount" required min="1" value={formData.itemsCount} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none" placeholder="e.g. 5" />
-                </div>
+              <h4 className="text-xl font-extrabold text-white tracking-tight mb-1 group-hover:text-teal-400 transition-colors">{a.name}</h4>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-8">{a.group} Collection</p>
+
+              <div className="space-y-4 mb-10">
+                 <div className="flex justify-between items-center text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>Component Stack</span><span>{a.items.length} Elements</span></div>
+                 <div className="flex flex-wrap gap-2">
+                    {a.items.map((item, i) => (
+                      <span key={i} className="px-3 py-1.5 bg-black/40 rounded-xl text-[9px] text-gray-400 font-bold border border-white/5 hover:border-teal-500/30 transition-all cursor-default">{item}</span>
+                    ))}
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-8 border-t border-white/5">
+                 <div><p className="text-[9px] font-black text-gray-600 uppercase mb-1">Valuation</p><p className="text-2xl font-black text-white font-mono tracking-tighter">₹{a.price.toLocaleString()}</p></div>
+                 <div className="text-right"><p className="text-[9px] font-black text-gray-600 uppercase mb-1">Margin</p><p className="text-2xl font-black text-teal-400">+{a.margin}%</p></div>
+              </div>
+
+              <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 flex gap-2">
+                 <button className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 border border-white/10"><Copy size={16}/></button>
+                 <button onClick={() => { setEditingItem(a); setShowModal(true); }} className="p-2.5 bg-white/5 hover:bg-teal-600 rounded-xl text-gray-400 hover:text-white border border-white/10"><Edit3 size={16}/></button>
+                 <button className="p-2.5 bg-red-500/10 hover:bg-red-600 rounded-xl text-red-500 hover:text-white border border-red-500/10"><Trash2 size={16}/></button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* 4. MODAL */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowModal(false)} />
+            <motion.div initial={{ scale: 0.9, y: 40 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 40 }} className="relative bg-[#1a1a24] border border-white/10 rounded-[48px] shadow-2xl w-full max-w-md p-10 z-[110] overflow-hidden font-plus-jakarta">
+              <div className="flex justify-between items-center mb-10"><h3 className="text-2xl font-extrabold text-white tracking-tighter uppercase">{editingItem ? 'Edit Profile' : 'Init Bundle'}</h3><button onClick={() => setShowModal(false)} className="bg-white/5 hover:bg-white/10 p-3 rounded-full text-white transition-all"><X size={20} /></button></div>
+              <form className="space-y-6">
+                <input required placeholder="Assign Bundle Name" className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-teal-500 font-bold" />
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Base Price (₹)</label>
-                    <input type="number" name="basePrice" required min="0" value={formData.basePrice} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none font-mono" placeholder="0.00" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Discount (%)</label>
-                    <input type="number" name="discount" min="0" max="100" value={formData.discount} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none font-mono" placeholder="0" />
-                  </div>
+                   <input type="number" required placeholder="Valuation (₹)" className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-teal-500 font-black" />
+                   <input type="number" required placeholder="Margin (%)" className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-teal-500 font-black" />
                 </div>
-                <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition-colors">Cancel</button>
-                  <button type="submit" className="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2.5 rounded-lg transition-colors">Save Collection</button>
-                </div>
+                <button type="submit" className="w-full bg-teal-600 hover:bg-teal-500 text-white font-black py-5 rounded-[24px] shadow-2xl shadow-teal-600/30 uppercase tracking-widest text-base border border-white/10 mt-4 flex items-center justify-center gap-2 transition-all"><CheckCircle2 size={20}/> {editingItem ? 'UPDATE PROFILE' : 'DEPLOY BUNDLE'}</button>
               </form>
             </motion.div>
           </div>

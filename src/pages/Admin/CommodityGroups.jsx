@@ -1,237 +1,209 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Boxes, Search, Plus, MoreVertical, X, Edit, Eye, Trash2 } from 'lucide-react';
+import { 
+  Search, Plus, Filter, Edit3, Trash2, X, 
+  ChevronRight, CheckCircle2, LayoutGrid, 
+  List, Package, Layers, Eye, ArrowUpRight,
+  ShoppingCart, Smartphone, Shirt, Nut, Sparkles, Box
+} from 'lucide-react';
 
 const CommodityGroups = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
+  const navigate = useNavigate();
 
-  // 1. Static Data for Commodity Groups (Categories)
-  const [groupsData, setGroupsData] = useState([
-    { id: 'GRP-001', name: 'Grocery & Staples', description: 'Daily essential food items and cooking needs', productCount: 145, status: 'Active' },
-    { id: 'GRP-002', name: 'Electronics', description: 'Gadgets, home appliances, and accessories', productCount: 32, status: 'Active' },
-    { id: 'GRP-003', name: 'Clothing & Apparel', description: 'Men, Women, and Kids fashion wear', productCount: 89, status: 'Active' },
-    { id: 'GRP-004', name: 'Dry Fruits & Nuts', description: 'Premium quality imported dry fruits', productCount: 12, status: 'Inactive' },
+  // --- 1. STATE MANAGEMENT ---
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [viewMode, setViewMode] = useState('grid');
+
+  // --- 2. ICON MAP FOR PROFESSIONAL LOOK ---
+  // Specific icons for each category instead of generic box
+  const iconMap = {
+    'Grocery': <ShoppingCart size={28} />,
+    'Electronics': <Smartphone size={28} />,
+    'Clothing': <Shirt size={28} />,
+    'Dry Fruits': <Nut size={28} />,
+    'Household': <Sparkles size={28} />,
+    'default': <Box size={28} />
+  };
+
+  // Categories Data with Icon Keys
+  const [groups, setGroups] = useState([
+    { id: 'GRP-001', name: 'Grocery', description: 'Daily essential food items and cooking needs.', productCount: 145, status: 'Active' },
+    { id: 'GRP-002', name: 'Electronics', description: 'Gadgets, home appliances, and accessories.', productCount: 32, status: 'Active' },
+    { id: 'GRP-003', name: 'Clothing', description: 'Men, Women, and Kids premium fashion wear.', productCount: 89, status: 'Active' },
+    { id: 'GRP-004', name: 'Dry Fruits', description: 'Premium quality imported dry fruits and nuts.', productCount: 12, status: 'Inactive' },
+    { id: 'GRP-005', name: 'Household', description: 'Cleaning supplies and home maintenance utility.', productCount: 56, status: 'Active' },
   ]);
 
-  // 2. Form State for New Group
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    status: 'Active'
-  });
+  const [formData, setFormData] = useState({ name: '', description: '', status: 'Active' });
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // Navigation Logic
+  const handleViewProducts = (name) => navigate('/admin/inventory', { state: { selectedGroup: name } });
 
-  // 3. Handle Form Submit
-  const handleAddSubmit = (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
-    
-    const newId = `GRP-00${groupsData.length + 1}`;
-
-    const newGroup = {
-      id: newId,
-      name: formData.name,
-      description: formData.description,
-      productCount: 0, // Brand new group will have 0 products initially
-      status: formData.status
-    };
-
-    setGroupsData([newGroup, ...groupsData]);
-    setShowAddModal(false);
-    setFormData({ name: '', description: '', status: 'Active' });
+    if (editingItem) {
+      setGroups(groups.map(g => g.id === editingItem.id ? { ...g, ...formData } : g));
+    } else {
+      const newGroup = { ...formData, id: `GRP-00${groups.length + 1}`, productCount: 0 };
+      setGroups([newGroup, ...groups]);
+    }
+    setShowModal(false);
+    setEditingItem(null);
   };
 
-  // Delete Function
   const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this Category? Products inside might be unassigned.");
-    if (confirmDelete) {
-      setGroupsData(groupsData.filter(item => item.id !== id));
-      setActiveDropdown(null);
+    if (window.confirm("Delete this category?")) {
+      setGroups(groups.filter(g => g.id !== id));
     }
   };
 
-  const filteredData = groupsData.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- 3. FILTER & SEARCH LOGIC ---
+  const filteredData = useMemo(() => {
+    const query = searchTerm.toLowerCase().trim();
+    return groups.filter(g => 
+      (g.name.toLowerCase().includes(query) || g.id.toLowerCase().includes(query)) &&
+      (activeFilter === 'All' || g.status === activeFilter)
+    );
+  }, [groups, searchTerm, activeFilter]);
 
   return (
-    <div className="space-y-6 relative" onClick={() => activeDropdown && setActiveDropdown(null)}>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        
-        {/* Top Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-600/20 p-3 rounded-lg border border-indigo-500/30">
-              <Boxes className="text-indigo-500" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Commodity Groups</h2>
-              <p className="text-sm text-gray-500">Manage main product categories and families</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-              <input
-                type="text"
-                placeholder="Search categories..."
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-indigo-500 text-white text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm whitespace-nowrap shadow-[0_0_15px_rgba(79,70,229,0.3)]"
-            >
-              <Plus size={18} /> Add Category
-            </button>
-          </div>
+    <div className="space-y-8 pb-10 font-plus-jakarta">
+      
+      {/* 1. TOP ANALYTICS STRIP */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-[#11111a] p-6 rounded-3xl border border-white/5 shadow-2xl flex justify-between items-center group">
+           <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">Total Architectures</p>
+              <h3 className="text-3xl font-extrabold text-white tracking-tighter">{groups.length} <span className="text-xs text-indigo-500 font-bold">Groups</span></h3>
+           </div>
+           <div className="p-3 bg-indigo-500/10 text-indigo-500 rounded-2xl group-hover:scale-110 transition-transform"><Layers size={22}/></div>
         </div>
-
-        {/* Data Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-visible shadow-lg">
-          <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#121212] border-b border-gray-800 text-gray-400 uppercase text-xs font-bold tracking-wider">
-                <tr>
-                  <th className="p-4 w-32">Group ID</th>
-                  <th className="p-4 w-48">Category Name</th>
-                  <th className="p-4">Description</th>
-                  <th className="p-4 text-center">Total Products</th>
-                  <th className="p-4 w-24">Status</th>
-                  <th className="p-4 text-center w-24">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 font-mono text-indigo-400 font-medium">{item.id}</td>
-                    <td className="p-4 text-gray-200 font-bold">{item.name}</td>
-                    <td className="p-4 text-gray-400 truncate max-w-[250px]">{item.description}</td>
-                    <td className="p-4 text-center">
-                      <span className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-bold border border-gray-700">
-                        {item.productCount} Items
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        item.status === 'Active' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                        'bg-red-500/10 text-red-500 border border-red-500/20'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center relative">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === item.id ? null : item.id); }} 
-                        className="text-gray-500 hover:text-indigo-500 transition-colors p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      <AnimatePresence>
-                        {activeDropdown === item.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-10 top-4 w-36 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Eye size={14} /> View Products
-                            </button>
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Edit size={14} /> Edit Category
-                            </button>
-                            <div className="border-t border-gray-800 my-1"></div>
-                            <button 
-                              onClick={() => handleDelete(item.id)}
-                              className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </td>
-                  </tr>
-                ))}
-                {filteredData.length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="p-8 text-center text-gray-500">
-                      No commodity groups found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-[#11111a] p-6 rounded-3xl border border-white/5 shadow-2xl flex justify-between items-center group">
+           <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">Active Status</p>
+              <h3 className="text-3xl font-extrabold text-white tracking-tighter">04 <span className="text-xs text-gray-500 font-bold">/ {groups.length}</span></h3>
+           </div>
+           <div className="p-3 bg-blue-500/10 text-blue-400 rounded-2xl group-hover:animate-pulse transition-transform"><CheckCircle2 size={22}/></div>
         </div>
-      </motion.div>
+        <div className="bg-[#11111a] p-6 rounded-3xl border border-white/5 shadow-2xl flex justify-between items-center group">
+           <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">Total Unit Volume</p>
+              <h3 className="text-3xl font-extrabold text-white tracking-tighter">334</h3>
+           </div>
+           <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl group-hover:rotate-12 transition-transform"><Package size={22}/></div>
+        </div>
+      </div>
 
-      {/* Add Category Modal */}
+      {/* 2. COMMAND TOOLBAR */}
+      <div className="sticky top-2 z-30 py-2">
+        <div className="bg-[#14141c]/90 backdrop-blur-2xl p-4 rounded-[32px] border border-white/10 flex flex-col lg:flex-row justify-between items-center gap-4 shadow-2xl">
+          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+            <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner">
+              <button onClick={() => setViewMode('grid')} className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}><LayoutGrid size={20} /></button>
+              <button onClick={() => setViewMode('table')} className={`p-2.5 rounded-xl transition-all ${viewMode === 'table' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}><List size={20} /></button>
+            </div>
+            <div className="relative flex-1 min-w-[320px] group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors" size={18} />
+              <input type="text" placeholder="Search Master ID or Category..." className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-12 py-3 text-xs text-white outline-none focus:border-indigo-500/50 transition-all shadow-inner font-medium" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
+              {searchTerm && <button onClick={()=>setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"><X size={16}/></button>}
+            </div>
+          </div>
+          <button onClick={() => { setEditingItem(null); setFormData({name:'', description:'', status:'Active'}); setShowModal(true); }} className="w-full lg:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-black px-8 py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl text-[10px] tracking-widest uppercase">
+            <Plus size={20} strokeWidth={3}/> New Architecture
+          </button>
+        </div>
+      </div>
+
+      {/* 3. BENTO GRID / TABLE AREA */}
+      <AnimatePresence mode='wait'>
+        {filteredData.length > 0 ? (
+          viewMode === 'grid' ? (
+            <motion.div key="grid" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {filteredData.map((g, idx) => (
+                <motion.div key={g.id} layout className="bg-[#1a1a24] rounded-[40px] border border-white/5 p-8 shadow-2xl relative group hover:border-indigo-500/30 transition-all duration-500">
+                  <div className="flex justify-between items-start mb-6">
+                     {/* --- IMPROVED ICON BOX: No more placeholder look --- */}
+                     <div className={`p-4 rounded-[24px] bg-gradient-to-br from-indigo-500/20 to-blue-600/5 border border-white/5 text-indigo-400 group-hover:scale-110 transition-transform duration-500 shadow-inner flex items-center justify-center`}>
+                        {iconMap[g.name] || iconMap['default']}
+                     </div>
+                     <div className="text-right">
+                        <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border ${g.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{g.status}</span>
+                        <p className="text-[10px] text-gray-600 font-mono mt-2 font-bold uppercase tracking-tighter">{g.id}</p>
+                     </div>
+                  </div>
+
+                  <div className="space-y-2 mb-8">
+                     <h4 className="text-2xl font-extrabold text-white tracking-tight group-hover:text-indigo-400 transition-colors uppercase">{g.name}</h4>
+                     <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2 font-medium">{g.description}</p>
+                  </div>
+
+                  {/* Visual Stats Area */}
+                  <div className="bg-black/30 rounded-3xl p-5 border border-white/5 space-y-4 shadow-inner">
+                     <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Inventory Linked</span>
+                        <span className="text-sm font-black text-white tracking-tighter">{g.productCount} <span className="text-[10px] text-gray-500 font-normal ml-0.5">SKUs</span></span>
+                     </div>
+                     <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((g.productCount / 200) * 100, 100)}%` }} className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 rounded-full shadow-[0_0_15px_rgba(79,70,229,0.3)]" />
+                     </div>
+                  </div>
+
+                  <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center">
+                    <button onClick={() => handleViewProducts(g.name)} className="flex items-center gap-2 text-indigo-400 font-black text-[10px] uppercase tracking-widest hover:text-white transition-all group/btn">
+                       Audit Registry <Eye size={14} className="group-hover/btn:scale-125 transition-transform"/>
+                    </button>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                       <button onClick={() => { setEditingItem(g); setFormData({...g}); setShowModal(true); }} className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all"><Edit3 size={18}/></button>
+                       <button onClick={() => handleDelete(g.id)} className="p-2.5 bg-red-500/5 hover:bg-red-500/20 border border-red-500/10 rounded-xl text-red-500 transition-all"><Trash2 size={18}/></button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#1a1a24] rounded-[40px] border border-white/5 overflow-hidden shadow-2xl">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-black/40 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">
+                  <tr><th className="p-6 pl-10">Entity Name</th><th className="p-6 text-right">Items</th><th className="p-6 text-center">Lifecycle</th><th className="p-6 text-center">Actions</th></tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredData.map(g => (
+                    <tr key={g.id} className="hover:bg-white/[0.03] transition-colors group">
+                      <td className="p-5 pl-10"><div><p className="text-white font-extrabold text-sm group-hover:text-indigo-400 uppercase tracking-tight">{g.name}</p><p className="text-[10px] text-gray-600 font-mono mt-1 font-bold">{g.id}</p></div></td>
+                      <td className="p-5 text-right font-black text-indigo-400 text-base tracking-tighter">{g.productCount}</td>
+                      <td className="p-5 text-center"><span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest ${g.status === 'Active' ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>{g.status}</span></td>
+                      <td className="p-5 flex justify-center gap-3">
+                         <button onClick={() => handleViewProducts(g.name)} className="p-2 text-gray-500 hover:text-indigo-400 transition-all"><Eye size={18}/></button>
+                         <button onClick={() => { setEditingItem(g); setFormData({...g}); setShowModal(true); }} className="p-2 text-gray-500 hover:text-white transition-all"><Edit3 size={18}/></button>
+                         <button onClick={() => handleDelete(g.id)} className="p-2 text-gray-500 hover:text-red-500 transition-all"><Trash2 size={18}/></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </motion.div>
+          )
+        ) : (
+          <div className="text-center py-20 bg-[#1a1a24] rounded-[40px] border-2 border-dashed border-white/5 opacity-50"><Box size={60} className="mx-auto text-gray-700 mb-4" /><h3 className="text-xl font-bold text-gray-500 uppercase tracking-widest">No Profiles Found</h3></div>
+        )}
+      </AnimatePresence>
+
+      {/* --- 4. MODAL --- */}
       <AnimatePresence>
-        {showAddModal && (
+        {showModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} 
-              className="relative bg-[#1a1a1a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden z-[110]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus size={20} className="text-indigo-500"/> Create Category
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Category Name</label>
-                  <input type="text" name="name" required value={formData.name} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-indigo-500 outline-none" placeholder="e.g. Frozen Foods" />
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Description</label>
-                  <textarea 
-                    name="description" 
-                    required 
-                    value={formData.description} 
-                    onChange={handleInputChange} 
-                    className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-indigo-500 outline-none min-h-[80px] resize-none" 
-                    placeholder="Short description of this group..." 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Initial Status</label>
-                  <select name="status" value={formData.status} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-indigo-500 outline-none font-bold">
-                    <option value="Active" className="text-green-500">Active</option>
-                    <option value="Inactive" className="text-red-500">Inactive</option>
-                  </select>
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition-colors">Cancel</button>
-                  <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-[0_0_15px_rgba(79,70,229,0.2)]">Save Category</button>
-                </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowModal(false)} />
+            <motion.div initial={{ scale: 0.9, y: 40 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 40 }} className="relative bg-[#1a1a24] border border-white/10 rounded-[56px] shadow-2xl w-full max-w-md p-10 z-[110] overflow-hidden">
+              <div className="flex justify-between items-center mb-10"><h3 className="text-2xl font-black text-white tracking-tighter uppercase">{editingItem ? 'Edit Profile' : 'Init Category'}</h3><button onClick={() => setShowModal(false)} className="bg-white/5 hover:bg-white/10 p-4 rounded-full text-white transition-all"><X size={24} /></button></div>
+              <form onSubmit={handleSave} className="space-y-6">
+                <input required placeholder="Assign Category Name" className="w-full bg-black/40 border border-white/10 rounded-3xl p-5 text-white outline-none focus:border-indigo-500 font-bold uppercase" value={formData.name} onChange={(e)=>setFormData({...formData, name: e.target.value})} />
+                <textarea required placeholder="Service Description..." className="w-full bg-black/40 border border-white/10 rounded-3xl p-5 text-white outline-none focus:border-indigo-500 font-medium h-28 resize-none shadow-inner" value={formData.description} onChange={(e)=>setFormData({...formData, description: e.target.value})} />
+                <select className="w-full bg-black/40 border border-white/10 rounded-3xl p-5 text-white outline-none focus:border-indigo-500 font-black appearance-none" value={formData.status} onChange={(e)=>setFormData({...formData, status: e.target.value})}><option value="Active">ACTIVE</option><option value="Inactive">INACTIVE</option></select>
+                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-6 rounded-[32px] shadow-2xl uppercase tracking-widest text-base border border-white/10 mt-6 flex items-center justify-center gap-3 transition-all"><CheckCircle2 size={24}/> {editingItem ? 'UPDATE CONFIG' : 'INITIALIZE PROFILE'}</button>
               </form>
             </motion.div>
           </div>
