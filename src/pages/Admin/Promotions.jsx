@@ -1,490 +1,266 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from 'react';
+import { Search, Plus, Calendar, Tag, Edit3, Trash2, X, Gift, Layers } from 'lucide-react';
 
-import {
-  Gift,
-  Calendar,
-  Tag,
-  Trash2,
-  Pencil,
-  TrendingUp,
-  Percent,
-  Plus,
-  X,
-  BadgeDollarSign,
-  Sparkles,
-  CheckCircle2,
-  Filter,
-  CircleDollarSign,
-  ShoppingBag,
-  TicketPercent,
-  BarChart3,
-} from "lucide-react";
+const PromotionsManagement = () => {
+  // Static Dummy Data
+  const initialPromotions = [
+    { id: 1, title: "Midnight Flash Sale", discount: "Flat ₹500 OFF", category: "Electronics", validTill: "18 May 2026", status: "Live" },
+    { id: 2, title: "Weekend Fashion Bonanza", discount: "20% OFF", category: "Apparel", validTill: "17 May 2026", status: "Ending Soon" },
+    { id: 3, title: "Monsoon BOGO Treat", discount: "Buy 1 Get 1", category: "Groceries", validTill: "30 May 2026", status: "Scheduled" },
 
-const Promotions = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  const [activeFilter, setActiveFilter] =
-    useState("All Promotions");
-
-  const promotions = [
-    {
-      id: 1,
-      title: "Festival Sale",
-      discount: "20% OFF",
-      status: "Active",
-      validity: "10 Jun - 20 Jun",
-      category: "Festival",
-      type: "Festival",
-      gradient: "from-blue-500 via-cyan-500 to-sky-500",
-      badge: "bg-emerald-400",
-    },
-
-    {
-      id: 2,
-      title: "Weekend Offer",
-      discount: "Buy 1 Get 1",
-      status: "Expired",
-      validity: "1 Jun - 5 Jun",
-      category: "Groceries",
-      type: "Expired",
-      gradient: "from-orange-400 via-amber-400 to-yellow-400",
-      badge: "bg-red-400",
-    },
-
-    {
-      id: 3,
-      title: "Mega Cashback",
-      discount: "₹500 Cashback",
-      status: "Active",
-      validity: "15 Jun - 30 Jun",
-      category: "Fashion",
-      type: "Cashback",
-      gradient: "from-emerald-400 via-teal-400 to-cyan-400",
-      badge: "bg-emerald-400",
-    },
-
-    {
-      id: 4,
-      title: "Diwali Blast",
-      discount: "40% OFF",
-      status: "Active",
-      validity: "1 Nov - 10 Nov",
-      category: "Festival",
-      type: "Festival",
-      gradient: "from-pink-500 via-rose-500 to-orange-400",
-      badge: "bg-emerald-400",
-    },
-
-    {
-      id: 5,
-      title: "Cashback Mania",
-      discount: "₹1000 Cashback",
-      status: "Active",
-      validity: "5 Jul - 25 Jul",
-      category: "Cashback",
-      type: "Cashback",
-      gradient: "from-violet-500 via-fuchsia-500 to-pink-500",
-      badge: "bg-emerald-400",
-    },
+    { id: 5, title: "First Users Welcome Pack", discount: "Flat ₹150 OFF", category: "All Categories", validTill: "31 June 2026", status: "Live" }
   ];
 
-  const filters = [
-    "All Promotions",
-    "Active",
-    "Expired",
-    "Cashback",
-    "Festival",
-  ];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('All');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('Add');
+  const [selectedPromoTitle, setSelectedPromoTitle] = useState('');
 
-  // FILTER LOGIC
-  const filteredPromotions = promotions.filter((promo) => {
-    if (activeFilter === "All Promotions") return true;
+  const tabs = ['All', 'Live', 'Ending Soon', 'Scheduled', 'Expired'];
 
-    if (activeFilter === "Active")
-      return promo.status === "Active";
+  const openModal = (type, title = '') => {
+    setModalType(type);
+    setSelectedPromoTitle(title);
+    setIsModalOpen(true);
+  };
 
-    if (activeFilter === "Expired")
-      return promo.status === "Expired";
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setIsModalOpen(false);
+    alert(`Success: Promotion details saved successfully!`);
+  };
 
-    if (activeFilter === "Cashback")
-      return promo.type === "Cashback";
+  const handleDelete = (title) => {
+    alert(`Action: Delete request triggered for "${title}"`);
+  };
 
-    if (activeFilter === "Festival")
-      return promo.type === "Festival";
-
-    return true;
+  const filteredPromotions = initialPromotions.filter(promo => {
+    const matchesSearch = promo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      promo.discount.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      promo.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTab = activeTab === 'All' || promo.status === activeTab;
+    return matchesSearch && matchesTab;
   });
 
-  // FILTER UI DATA
-  const getFilterInfo = () => {
-    switch (activeFilter) {
-      case "Active":
-        return {
-          title: "Active Promotions",
-          description:
-            "Currently running promotions in your billing software.",
-          value: "12 Running",
-          color: "text-blue-600",
-          bg: "bg-blue-100",
-        };
-
-      case "Expired":
-        return {
-          title: "Expired Promotions",
-          description:
-            "Offers that are no longer available.",
-          value: "5 Expired",
-          color: "text-orange-500",
-          bg: "bg-orange-100",
-        };
-
-      case "Cashback":
-        return {
-          title: "Cashback Campaigns",
-          description:
-            "Cashback offers boosting customer purchases.",
-          value: "₹12K Cashback",
-          color: "text-emerald-600",
-          bg: "bg-emerald-100",
-        };
-
-      case "Festival":
-        return {
-          title: "Festival Offers",
-          description:
-            "Special festive discounts and seasonal sales.",
-          value: "8 Festival Deals",
-          color: "text-pink-600",
-          bg: "bg-pink-100",
-        };
-
-      default:
-        return {
-          title: "All Promotions",
-          description:
-            "Overview of all campaigns and promotions.",
-          value: "25 Total Promotions",
-          color: "text-cyan-600",
-          bg: "bg-cyan-100",
-        };
-    }
-  };
-
-  const filterInfo = getFilterInfo();
-
-  const handleCreateOffer = () => {
-    setShowModal(false);
-    setShowSuccess(true);
-
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 3000);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50 p-6 overflow-hidden">
-      <div className="max-w-[1700px] mx-auto">
-        {/* HEADER */}
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-10">
-          <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 rounded-2xl shadow-lg">
-              <Gift className="text-white" size={24} />
-            </div>
+    <div className="min-h-screen bg-[#09090d] text-gray-200 p-6 md:p-2 font-sans">
 
-            <div>
-              <h1 className="text-5xl font-black text-slate-800 tracking-tight">
-                Promotions & Offers
-              </h1>
+      {/* Upgraded Engaging Professional Controls Layout Section */}
+      <div className="bg-[#111116] border border-white/[0.04] rounded-2xl p-5 mb-8 shadow-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-white/[0.04]">
 
-              <p className="text-slate-500 text-base mt-1 font-medium">
-                Manage marketing campaigns and smart discounts
-              </p>
-            </div>
+          {/* Enhanced Search Input */}
+          <div className="relative w-full sm:w-80 group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
+            <input
+              type="text"
+              placeholder="Search campaigns..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#161620] border border-white/[0.05] focus:border-blue-500/80 focus:bg-[#181826] rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-gray-200 placeholder-gray-600 outline-none transition-all shadow-inner"
+            />
           </div>
 
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-7 py-4 rounded-2xl shadow-xl flex items-center gap-3 text-lg font-semibold"
-          >
-            <Plus size={18} />
-            Create Promotion
-          </button>
-        </div>
-
-        {/* FILTER BOX */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-blue-100 p-4 rounded-2xl">
-              <Filter className="text-blue-600" size={20} />
-            </div>
-
-            <h2 className="text-3xl font-black text-slate-700">
-              Promotion Filters
-            </h2>
-          </div>
-
-          {/* FILTER BUTTONS */}
-          <div className="flex flex-wrap gap-4 mb-8">
-            {filters.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveFilter(item)}
-                className={`px-6 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                  activeFilter === item
-                    ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg scale-105"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
-          {/* DYNAMIC UI */}
-          <motion.div
-            key={activeFilter}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`${filterInfo.bg} rounded-3xl p-6 border border-white/50`}
-          >
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <h2
-                  className={`text-3xl font-black ${filterInfo.color}`}
-                >
-                  {filterInfo.title}
-                </h2>
-
-                <p className="text-slate-600 mt-2 text-base">
-                  {filterInfo.description}
-                </p>
-              </div>
-
-              <div className="bg-white px-8 py-5 rounded-3xl shadow-lg">
-                <h3
-                  className={`text-4xl font-black ${filterInfo.color}`}
-                >
-                  {filterInfo.value}
-                </h3>
-
-                <p className="text-slate-400 text-sm mt-1">
-                  Live Promotion Data
-                </p>
-              </div>
-            </div>
-
-            {/* PROGRESS BAR */}
-            <div className="mt-6">
-              <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">
-                  Promotion Performance
-                </span>
-
-                <span
-                  className={`text-sm font-bold ${filterInfo.color}`}
-                >
-                  82%
-                </span>
-              </div>
-
-              <div className="w-full bg-white h-4 rounded-full overflow-hidden shadow-inner">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "82%" }}
-                  transition={{ duration: 1 }}
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
-                ></motion.div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* PROMOTION CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {filteredPromotions.map((promo) => (
-            <motion.div
-              key={promo.id}
-              whileHover={{ y: -8 }}
-              className={`bg-gradient-to-br ${promo.gradient} rounded-[32px] p-6 shadow-2xl text-white relative overflow-hidden`}
+          {/* Add Promotion Button */}
+          <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => openModal('Add')}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20 active:scale-98 w-full sm:w-auto"
             >
-              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/20 rounded-full blur-3xl"></div>
+              <Plus size={16} className="stroke-[2.5]" /> Add Promotion
+            </button>
+          </div>
+        </div>
 
-              {/* TOP */}
-              <div className="flex justify-between items-start mb-8 relative z-10">
-                <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md">
-                  <Gift size={24} />
-                </div>
-
-                <span
-                  className={`${promo.badge} px-4 py-2 rounded-full text-xs font-bold`}
-                >
-                  {promo.status}
-                </span>
-              </div>
-
-              {/* CONTENT */}
-              <div className="relative z-10">
-                <h2 className="text-4xl font-black leading-tight mb-3">
-                  {promo.title}
-                </h2>
-
-                <p className="text-2xl font-bold mb-8 opacity-95">
-                  {promo.discount}
-                </p>
-
-                <div className="space-y-3 text-sm mb-8 opacity-95">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} />
-                    {promo.validity}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Tag size={16} />
-                    {promo.category}
-                  </div>
-                </div>
-
-                {/* BUTTONS */}
-                <div className="flex gap-3">
-                  <button className="flex-1 bg-white text-slate-800 py-3 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm shadow-lg">
-                    <Pencil size={16} />
-                    Edit
-                  </button>
-
-                  <button className="flex-1 bg-red-500 py-3 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm shadow-lg">
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+        {/* Upgraded Premium Filter Tabs Row with Vibrant Active States */}
+        <div className="flex items-center overflow-x-auto gap-2 pt-4 custom-scrollbar">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap rounded-lg border transition-all duration-200 ${activeTab === tab
+                ? 'bg-gradient-to-r from-blue-600/15 to-indigo-600/15 text-blue-400 border-blue-500/40 shadow-md shadow-blue-500/5'
+                : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/[0.02]'
+                }`}
+            >
+              {tab}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* CREATE MODAL */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.85 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.85 }}
-              className="bg-white w-full max-w-xl rounded-[36px] p-8 shadow-2xl relative"
-            >
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute top-5 right-5 bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl"
-              >
-                <X size={18} className="text-slate-700" />
-              </button>
+      {/* Upgraded Premium Card Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredPromotions.length > 0 ? (
+          filteredPromotions.map((promo) => {
+            // Pick side border color based on status dynamically
+            const statusConfig =
+              promo.status === 'Live' ? { border: 'border-l-emerald-500', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' } :
+                promo.status === 'Ending Soon' ? { border: 'border-l-amber-500', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20' } :
+                  promo.status === 'Scheduled' ? { border: 'border-l-blue-500', badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20' } :
+                    { border: 'border-l-gray-600', badge: 'bg-gray-800 text-gray-500 border-transparent' };
 
-              <div className="flex items-center gap-4 mb-8">
-                <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 rounded-2xl">
-                  <Sparkles className="text-white" size={22} />
+            return (
+              <div
+                key={promo.id}
+                className={`relative bg-[#13131a]/60 backdrop-blur-md border border-white/[0.04] ${statusConfig.border} border-l-4 rounded-xl p-5 flex flex-col justify-between shadow-xl hover:shadow-2xl hover:bg-[#161622]/80 transition-all duration-200 group`}
+              >
+                <div>
+                  {/* Top Header Row inside Card */}
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    {/* Uniform clean style for all categories */}
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-white/[0.03] text-gray-400 px-2 py-1 rounded-md border border-white/[0.02]">
+                      <Tag size={11} className="text-yellow-400" />
+                      {promo.category}
+                    </span>
+
+                    <span className={`text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded border ${statusConfig.badge}`}>
+                      {promo.status}
+                    </span>
+                  </div>
+
+                  {/* Promotion Main Titles */}
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-gray-500 tracking-wide uppercase">{promo.title}</p>
+                    <h2 className="text-2xl font-black text-white tracking-tight group-hover:text-blue-400 transition-colors duration-200">
+                      {promo.discount}
+                    </h2>
+                  </div>
                 </div>
 
-                <div>
-                  <h2 className="text-4xl font-black text-slate-800">
-                    Create Promotion
-                  </h2>
+                {/* Separator Line */}
+                <div className="w-full h-[1px] bg-white/[0.03] my-4" />
 
-                  <p className="text-slate-500 text-base mt-1">
-                    Add a new campaign or offer
-                  </p>
+                {/* Footer Section */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Calendar size={13} className="text-gray-600" />
+                    <span>Valid till: <span className="text-gray-400 font-medium">{promo.validTill}</span></span>
+                  </div>
+
+                  {/* Actions Utility Grid with consistent colored buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openModal('Edit', promo.title)}
+                      className="p-1.5 bg-[#181824] hover:bg-amber-500/10 border border-white/[0.04] text-gray-400 hover:text-amber-400 rounded-md transition-all"
+                      title="Edit Campaign"
+                    >
+                      <Edit3 size={13} className='text-green-400' />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(promo.title)}
+                      className="p-1.5 bg-[#181824] hover:bg-red-500/10 border border-white/[0.04] text-gray-400 hover:text-red-400 rounded-md transition-all"
+                      title="Remove Campaign"
+                    >
+                      <Trash2 size={13} className='text-red-400' />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })
+        ) : (
+          <div className="col-span-full py-16 bg-[#121218]/50 border border-dashed border-gray-800 rounded-xl text-center text-sm text-gray-500">
+            No active campaigns found matching the filters.
+          </div>
+        )}
+      </div>
+
+      {/* Simple Standard Popup Modal Frame */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#13131a] border border-white/[0.06] w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
+
+            <div className="flex items-center justify-between p-5 border-b border-gray-800/60">
+              <h3 className="text-md font-bold text-white flex items-center gap-2">
+                {modalType === 'Add' ? <Gift size={16} className="text-blue-500" /> : <Layers size={16} className="text-blue-500" />}
+                {modalType === 'Add' ? 'Create New Promotion' : 'Edit Promotion'}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-500 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleFormSubmit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Campaign Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Year End Bash"
+                  defaultValue={modalType === 'Edit' ? selectedPromoTitle : ''}
+                  required
+                  className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Offer / Discount</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 30% OFF"
+                    required
+                    className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Category</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Footwear"
+                    required
+                    className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none transition-all"
+                  />
                 </div>
               </div>
 
-              <div className="space-y-5">
-                <input
-                  type="text"
-                  placeholder="Promotion Title"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-base text-slate-700 outline-none"
-                />
-
-                <input
-                  type="text"
-                  placeholder="Discount / Cashback"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-base text-slate-700 outline-none"
-                />
-
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Expiry Date</label>
                   <input
                     type="date"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm text-slate-700 outline-none"
-                  />
-
-                  <input
-                    type="date"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm text-slate-700 outline-none"
+                    required
+                    className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none transition-all"
                   />
                 </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Status</label>
+                  <select className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none transition-all cursor-pointer">
+                    <option>Live</option>
+                    <option>Scheduled</option>
+                    <option>Ending Soon</option>
+                  </select>
+                </div>
+              </div>
 
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-base text-slate-700 outline-none">
-                  <option>Select Category</option>
-                  <option>Electronics</option>
-                  <option>Groceries</option>
-                  <option>Fashion</option>
-                </select>
-
-                <textarea
-                  rows="4"
-                  placeholder="Promotion Description"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-base text-slate-700 outline-none resize-none"
-                ></textarea>
-
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-800/60 mt-6">
                 <button
-                  onClick={handleCreateOffer}
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-4 rounded-2xl text-lg font-bold shadow-xl flex items-center justify-center gap-3"
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                 >
-                  <BadgeDollarSign size={20} />
-                  Create Offer
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-blue-600/10"
+                >
+                  Save Changes
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </form>
 
-      {/* SUCCESS POPUP */}
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -60 }}
-            animate={{ opacity: 1, y: 20 }}
-            exit={{ opacity: 0, y: -60 }}
-            className="fixed top-4 right-4 z-[100]"
-          >
-            <div className="bg-white border border-emerald-100 shadow-2xl rounded-3xl px-5 py-4 flex items-center gap-4 min-w-[320px]">
-              <div className="bg-emerald-100 p-3 rounded-2xl">
-                <CheckCircle2
-                  className="text-emerald-600"
-                  size={24}
-                />
-              </div>
+          </div>
+        </div>
+      )}
 
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">
-                  Offer Created Successfully
-                </h3>
-
-                <p className="text-slate-500 text-sm mt-1">
-                  Promotion added successfully.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
 
-export default Promotions;
+export default PromotionsManagement;
