@@ -18,6 +18,7 @@ import {
   Undo2,
   ChevronLeft,
   ChevronRight,
+  Send,
 } from "lucide-react";
 
 const Ticketing = () => {
@@ -38,6 +39,41 @@ const Ticketing = () => {
 
   const [currentSlide, setCurrentSlide] =
     useState(0);
+
+  // EDIT STATES
+
+  const [showEditModal, setShowEditModal] =
+    useState(false);
+
+  const [selectedTicket, setSelectedTicket] =
+    useState(null);
+
+  const [editIssue, setEditIssue] =
+    useState("");
+
+  const [editCustomer, setEditCustomer] =
+    useState("");
+
+  // CHAT STATES
+
+  const [showChatModal, setShowChatModal] =
+    useState(false);
+
+  const [chatMessages, setChatMessages] =
+    useState([
+      {
+        sender: "support",
+        text: "Hello, we are checking your issue.",
+      },
+
+      {
+        sender: "customer",
+        text: "Thank you, waiting for update.",
+      },
+    ]);
+
+  const [newMessage, setNewMessage] =
+    useState("");
 
   const filters = [
     "All Tickets",
@@ -117,7 +153,8 @@ const Ticketing = () => {
     useState(initialTickets);
 
   const filteredTickets = tickets.filter((ticket) => {
-    if (activeFilter === "All Tickets") return true;
+    if (activeFilter === "All Tickets")
+      return true;
 
     if (activeFilter === "Open")
       return ticket.status === "Open";
@@ -193,8 +230,70 @@ const Ticketing = () => {
     }
   };
 
+  // EDIT OPEN
+
+  const handleEditOpen = (ticket) => {
+    setSelectedTicket(ticket);
+
+    setEditIssue(ticket.issue);
+
+    setEditCustomer(ticket.customer);
+
+    setShowEditModal(true);
+  };
+
+  // SAVE EDIT
+
+  const handleSaveEdit = () => {
+    const updatedTickets = tickets.map((item) =>
+      item.id === selectedTicket.id
+        ? {
+            ...item,
+            issue: editIssue,
+            customer: editCustomer,
+          }
+        : item
+    );
+
+    setTickets(updatedTickets);
+
+    setShowEditModal(false);
+
+    setShowSuccess(true);
+
+    setTimeout(() => {
+      setShowSuccess(false);
+    }, 3000);
+  };
+
+  // CHAT SEND
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        sender: "customer",
+        text: newMessage,
+      },
+    ]);
+
+    setNewMessage("");
+
+    setTimeout(() => {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: "support",
+          text: "Our support team will get back shortly.",
+        },
+      ]);
+    }, 1200);
+  };
+
   return (
-    <div className="min-h-screen bg-slant-50 p-5 overflow-hidden">
+    <div className="min-h-screen bg-[#F3F4F6] p-5 overflow-hidden">
       {/* BACKGROUND */}
 
       <div className="fixed top-0 left-0 w-[420px] h-[420px] bg-cyan-300/20 blur-[130px] rounded-full"></div>
@@ -327,9 +426,9 @@ const Ticketing = () => {
                     x: -100,
                   }}
                   transition={{ duration: 0.5 }}
-                  className={`bg-gradient-to-br ${ticket.gradient} rounded-[34px] overflow-hidden shadow-xl relative max-w-[1250px] mx-auto border border-white/50`}
+                  className={`bg-gradient-to-br ${ticket.gradient} rounded-[34px] overflow-hidden shadow-xl relative max-w-[1200px] mx-auto border border-white/50`}
                 >
-                  <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 min-h-[430px]">
+                  <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 min-h-[420px]">
                     {/* IMAGE */}
 
                     <div className="relative h-full">
@@ -352,9 +451,18 @@ const Ticketing = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <button className="w-11 h-11 rounded-2xl bg-white/80 border border-white/50 flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-all">
+                          {/* EDIT */}
+
+                          <button
+                            onClick={() =>
+                              handleEditOpen(ticket)
+                            }
+                            className="w-11 h-11 rounded-2xl bg-white/80 border border-white/50 flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-all"
+                          >
                             <Pencil size={14} />
                           </button>
+
+                          {/* DELETE */}
 
                           <button
                             onClick={() =>
@@ -391,11 +499,11 @@ const Ticketing = () => {
 
                     <div className="p-6 flex flex-col justify-between">
                       <div>
-                        <h2 className="text-[2.4rem] leading-tight font-black mb-2 text-gray-900">
+                        <h2 className="text-[2.2rem] leading-tight font-black mb-2 text-gray-900">
                           {ticket.id}
                         </h2>
 
-                        <h3 className="text-[1.9rem] leading-tight font-black mb-4 text-gray-900">
+                        <h3 className="text-[1.7rem] leading-tight font-black mb-4 text-gray-900">
                           {ticket.issue}
                         </h3>
 
@@ -462,7 +570,12 @@ const Ticketing = () => {
 
                       {/* CHAT */}
 
-                      <button className="mt-6 bg-white/70 border border-white/50 hover:bg-white rounded-[24px] py-4 flex items-center justify-center gap-3 text-sm font-bold text-gray-900 transition-all">
+                      <button
+                        onClick={() =>
+                          setShowChatModal(true)
+                        }
+                        className="mt-6 bg-white/70 border border-white/50 hover:bg-white rounded-[24px] py-4 flex items-center justify-center gap-3 text-sm font-bold text-gray-900 transition-all"
+                      >
                         <MessageSquare size={16} />
                         Open Ticket Chat
                       </button>
@@ -476,130 +589,255 @@ const Ticketing = () => {
 
       {/* CREATE MODAL */}
 
-      <AnimatePresence>
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white border border-gray-300 w-full max-w-xl rounded-[36px] p-8 shadow-2xl relative">
-              <button
-                onClick={() =>
-                  setShowCreateModal(false)
-                }
-                className="absolute top-5 right-5 bg-gray-100 p-3 rounded-2xl"
-              >
-                <X
-                  size={16}
-                  className="text-gray-900"
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-300 w-full max-w-xl rounded-[36px] p-8 shadow-2xl relative">
+            <button
+              onClick={() =>
+                setShowCreateModal(false)
+              }
+              className="absolute top-5 right-5 bg-gray-100 p-3 rounded-2xl"
+            >
+              <X
+                size={16}
+                className="text-gray-900"
+              />
+            </button>
+
+            <div className="flex items-center gap-4 mb-7">
+              <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4 rounded-3xl">
+                <BadgePlus
+                  size={18}
+                  className="text-white"
                 />
-              </button>
-
-              <div className="flex items-center gap-4 mb-7">
-                <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4 rounded-3xl">
-                  <BadgePlus
-                    size={18}
-                    className="text-white"
-                  />
-                </div>
-
-                <div>
-                  <h2 className="text-3xl font-black text-gray-900">
-                    Create Ticket
-                  </h2>
-
-                  <p className="text-gray-600 text-sm mt-1">
-                    Create new support ticket
-                  </p>
-                </div>
               </div>
 
-              <div className="space-y-5">
-                <input
-                  type="text"
-                  placeholder="Customer Name"
-                  className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none"
-                />
-
-                <input
-                  type="text"
-                  placeholder="Issue Title"
-                  className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none"
-                />
-
-                <textarea
-                  rows="4"
-                  placeholder="Describe the issue..."
-                  className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none resize-none"
-                ></textarea>
-
-                <button
-                  onClick={handleCreateTicket}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 py-4 rounded-3xl text-sm font-bold flex items-center justify-center gap-3 text-white"
-                >
-                  <Headphones size={16} />
+              <div>
+                <h2 className="text-3xl font-black text-gray-900">
                   Create Ticket
-                </button>
+                </h2>
+
+                <p className="text-gray-600 text-sm mt-1">
+                  Create new support ticket
+                </p>
               </div>
             </div>
+
+            <div className="space-y-5">
+              <input
+                type="text"
+                placeholder="Customer Name"
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none"
+              />
+
+              <input
+                type="text"
+                placeholder="Issue Title"
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none"
+              />
+
+              <textarea
+                rows="4"
+                placeholder="Describe the issue..."
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none resize-none"
+              ></textarea>
+
+              <button
+                onClick={handleCreateTicket}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 py-4 rounded-3xl text-sm font-bold flex items-center justify-center gap-3 text-white"
+              >
+                <Headphones size={16} />
+                Create Ticket
+              </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-300 w-full max-w-xl rounded-[36px] p-8 shadow-2xl relative">
+            <button
+              onClick={() =>
+                setShowEditModal(false)
+              }
+              className="absolute top-5 right-5 bg-gray-100 p-3 rounded-2xl"
+            >
+              <X
+                size={16}
+                className="text-gray-900"
+              />
+            </button>
+
+            <h2 className="text-3xl font-black text-gray-900 mb-6">
+              Edit Ticket
+            </h2>
+
+            <div className="space-y-5">
+              <input
+                type="text"
+                value={editIssue}
+                onChange={(e) =>
+                  setEditIssue(e.target.value)
+                }
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none"
+              />
+
+              <input
+                type="text"
+                value={editCustomer}
+                onChange={(e) =>
+                  setEditCustomer(e.target.value)
+                }
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-3xl px-5 py-4 text-sm text-gray-900 outline-none"
+              />
+
+              <button
+                onClick={handleSaveEdit}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 py-4 rounded-3xl text-sm font-bold text-white"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CHAT MODAL */}
+
+      {showChatModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-300 w-full max-w-2xl rounded-[36px] p-7 shadow-2xl relative">
+            <button
+              onClick={() =>
+                setShowChatModal(false)
+              }
+              className="absolute top-5 right-5 bg-gray-100 p-3 rounded-2xl"
+            >
+              <X
+                size={16}
+                className="text-gray-900"
+              />
+            </button>
+
+            <div className="flex items-center gap-4 mb-6">
+              <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4 rounded-3xl">
+                <MessageSquare
+                  size={18}
+                  className="text-white"
+                />
+              </div>
+
+              <div>
+                <h2 className="text-3xl font-black text-gray-900">
+                  Ticket Chat
+                </h2>
+
+                <p className="text-gray-600 text-sm mt-1">
+                  Support communication panel
+                </p>
+              </div>
+            </div>
+
+            {/* MESSAGES */}
+
+            <div className="bg-[#F3F4F6] rounded-[30px] p-5 h-[350px] overflow-y-auto space-y-4">
+              {chatMessages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`max-w-[75%] px-5 py-4 rounded-[24px] text-sm font-medium ${
+                    msg.sender === "support"
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white"
+                      : "bg-white border border-gray-300 text-gray-900 ml-auto"
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              ))}
+            </div>
+
+            {/* INPUT */}
+
+            <div className="flex gap-3 mt-5">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) =>
+                  setNewMessage(e.target.value)
+                }
+                placeholder="Type your message..."
+                className="flex-1 bg-[#F3F4F6] border border-gray-300 rounded-[24px] px-5 py-4 text-sm text-gray-900 outline-none"
+              />
+
+              <button
+                onClick={handleSendMessage}
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 w-[60px] rounded-[24px] flex items-center justify-center shadow-lg"
+              >
+                <Send
+                  size={18}
+                  className="text-white"
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SUCCESS */}
 
-      <AnimatePresence>
-        {showSuccess && (
-          <div className="fixed top-4 right-4 z-[100]">
-            <div className="bg-white border border-green-300 shadow-xl rounded-3xl px-5 py-4 flex items-center gap-4 min-w-[320px]">
-              <CheckCircle2
-                className="text-green-500"
-                size={22}
-              />
+      {showSuccess && (
+        <div className="fixed top-4 right-4 z-[100]">
+          <div className="bg-white border border-green-300 shadow-xl rounded-3xl px-5 py-4 flex items-center gap-4 min-w-[320px]">
+            <CheckCircle2
+              className="text-green-500"
+              size={22}
+            />
 
-              <div>
-                <h3 className="text-base font-bold text-gray-900">
-                  Ticket Created Successfully
-                </h3>
+            <div>
+              <h3 className="text-base font-bold text-gray-900">
+                Changes Saved Successfully
+              </h3>
 
-                <p className="text-gray-600 text-xs mt-1">
-                  Support ticket added successfully.
-                </p>
-              </div>
+              <p className="text-gray-600 text-xs mt-1">
+                Ticket information updated.
+              </p>
             </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* DELETE */}
 
-      <AnimatePresence>
-        {showDeletePopup && (
-          <div className="fixed top-4 right-4 z-[100]">
-            <div className="bg-white border border-red-300 shadow-xl rounded-3xl px-5 py-4 flex items-center gap-4 min-w-[340px]">
-              <Trash2
-                className="text-red-500"
-                size={22}
-              />
+      {showDeletePopup && (
+        <div className="fixed top-4 right-4 z-[100]">
+          <div className="bg-white border border-red-300 shadow-xl rounded-3xl px-5 py-4 flex items-center gap-4 min-w-[340px]">
+            <Trash2
+              className="text-red-500"
+              size={22}
+            />
 
-              <div className="flex-1">
-                <h3 className="text-base font-bold text-gray-900">
-                  Ticket Deleted
-                </h3>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-gray-900">
+                Ticket Deleted
+              </h3>
 
-                <p className="text-gray-600 text-xs mt-1">
-                  The ticket has been removed.
-                </p>
-              </div>
-
-              <button
-                onClick={handleUndoDelete}
-                className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-2xl flex items-center gap-2 text-xs font-semibold text-gray-900"
-              >
-                <Undo2 size={14} />
-                Undo
-              </button>
+              <p className="text-gray-600 text-xs mt-1">
+                The ticket has been removed.
+              </p>
             </div>
+
+            <button
+              onClick={handleUndoDelete}
+              className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-2xl flex items-center gap-2 text-xs font-semibold text-gray-900"
+            >
+              <Undo2 size={14} />
+              Undo
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 };

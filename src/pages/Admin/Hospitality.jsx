@@ -105,7 +105,8 @@ const Hospitality = () => {
     },
   ];
 
-  const [services, setServices] = useState(initialServices);
+  const [services, setServices] =
+    useState(initialServices);
 
   const [deletedItem, setDeletedItem] =
     useState(null);
@@ -231,7 +232,7 @@ const Hospitality = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slant-50 p-4 overflow-hidden relative">
+    <div className="min-h-screen bg-[#E5E7EB] p-4 overflow-hidden relative">
       {/* BACKGROUND */}
 
       <div className="absolute top-0 left-0 w-[320px] h-[320px] bg-cyan-300/20 blur-[120px] rounded-full"></div>
@@ -435,8 +436,6 @@ const Hospitality = () => {
                     {/* INFO BOXES */}
 
                     <div className="grid grid-cols-3 gap-3 mt-6">
-                      {/* STAFF */}
-
                       <div className="bg-white/70 rounded-[28px] p-4 border border-white/40 h-[135px] flex flex-col justify-between">
                         <Users
                           size={16}
@@ -454,8 +453,6 @@ const Hospitality = () => {
                         </div>
                       </div>
 
-                      {/* TIMING */}
-
                       <div className="bg-white/70 rounded-[28px] p-4 border border-white/40 h-[135px] flex flex-col justify-between">
                         <CalendarDays
                           size={16}
@@ -472,8 +469,6 @@ const Hospitality = () => {
                           </h4>
                         </div>
                       </div>
-
-                      {/* RATING */}
 
                       <div className="bg-white/70 rounded-[28px] p-4 border border-white/40 h-[135px] flex flex-col justify-between">
                         <Star

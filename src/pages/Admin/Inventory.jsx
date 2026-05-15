@@ -19,8 +19,27 @@ import {
 
 const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
+
+  const [showAddModal, setShowAddModal] =
+    useState(false);
+
+  const [showPopup, setShowPopup] =
+    useState(false);
+
+  const [showEditModal, setShowEditModal] =
+    useState(false);
+
+  const [showEditPopup, setShowEditPopup] =
+    useState(false);
+
+  const [showDeletePopup, setShowDeletePopup] =
+    useState(false);
+
+  const [selectedProduct, setSelectedProduct] =
+    useState(null);
+
+  const [deletedProduct, setDeletedProduct] =
+    useState(null);
 
   const inventoryData = [
     {
@@ -114,7 +133,21 @@ const Inventory = () => {
     },
   ];
 
-  const filteredProducts = inventoryData.filter(
+  const [products, setProducts] =
+    useState(inventoryData);
+
+  const [editName, setEditName] =
+    useState("");
+
+  const [editPrice, setEditPrice] =
+    useState("");
+
+  const [editSupplier, setEditSupplier] =
+    useState("");
+
+  // SEARCH FILTER
+
+  const filteredProducts = products.filter(
     (item) =>
       item.name
         .toLowerCase()
@@ -123,6 +156,8 @@ const Inventory = () => {
         .toLowerCase()
         .includes(searchTerm.toLowerCase())
   );
+
+  // ADD PRODUCT
 
   const handleAddProduct = () => {
     setShowAddModal(false);
@@ -134,6 +169,79 @@ const Inventory = () => {
     }, 3000);
   };
 
+  // EDIT OPEN
+
+  const handleEditOpen = (product) => {
+    setSelectedProduct(product);
+
+    setEditName(product.name);
+
+    setEditPrice(product.price);
+
+    setEditSupplier(product.supplier);
+
+    setShowEditModal(true);
+  };
+
+  // SAVE EDIT
+
+  const handleSaveEdit = () => {
+    const updatedProducts = products.map(
+      (item) =>
+        item.id === selectedProduct.id
+          ? {
+              ...item,
+              name: editName,
+              price: editPrice,
+              supplier: editSupplier,
+            }
+          : item
+    );
+
+    setProducts(updatedProducts);
+
+    setShowEditModal(false);
+
+    setShowEditPopup(true);
+
+    setTimeout(() => {
+      setShowEditPopup(false);
+    }, 3000);
+  };
+
+  // DELETE
+
+  const handleDelete = (product) => {
+    setDeletedProduct(product);
+
+    const updatedProducts = products.filter(
+      (item) => item.id !== product.id
+    );
+
+    setProducts(updatedProducts);
+
+    setShowDeletePopup(true);
+
+    setTimeout(() => {
+      setShowDeletePopup(false);
+    }, 5000);
+  };
+
+  // UNDO DELETE
+
+  const handleUndoDelete = () => {
+    if (deletedProduct) {
+      setProducts((prev) => [
+        ...prev,
+        deletedProduct,
+      ]);
+
+      setDeletedProduct(null);
+
+      setShowDeletePopup(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-4">
       {/* HEADER */}
@@ -142,7 +250,10 @@ const Inventory = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-              <Boxes size={26} className="text-white" />
+              <Boxes
+                size={26}
+                className="text-white"
+              />
             </div>
 
             <div>
@@ -157,7 +268,9 @@ const Inventory = () => {
           </div>
 
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() =>
+              setShowAddModal(true)
+            }
             className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-105 transition-all text-white px-5 py-2.5 rounded-[16px] font-bold flex items-center gap-2 text-sm"
           >
             <Plus size={17} />
@@ -300,6 +413,8 @@ const Inventory = () => {
             whileHover={{ y: -5 }}
             className={`bg-gradient-to-br ${item.color} border rounded-[24px] p-4 shadow-sm overflow-hidden`}
           >
+            {/* TOP */}
+
             <div className="flex justify-between items-start mb-4">
               <div className="bg-white/70 px-3 py-1 rounded-full">
                 <p className="text-gray-900 text-[9px] font-bold uppercase">
@@ -308,15 +423,31 @@ const Inventory = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <button className="w-10 h-10 rounded-xl bg-white/70 hover:bg-cyan-500 transition-all flex items-center justify-center text-gray-900 hover:text-white">
+                {/* EDIT */}
+
+                <button
+                  onClick={() =>
+                    handleEditOpen(item)
+                  }
+                  className="w-10 h-10 rounded-xl bg-white/70 hover:bg-cyan-500 transition-all flex items-center justify-center text-gray-900 hover:text-white"
+                >
                   <Pencil size={15} />
                 </button>
 
-                <button className="w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 transition-all flex items-center justify-center text-white">
+                {/* DELETE */}
+
+                <button
+                  onClick={() =>
+                    handleDelete(item)
+                  }
+                  className="w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 transition-all flex items-center justify-center text-white"
+                >
                   <Trash2 size={15} />
                 </button>
               </div>
             </div>
+
+            {/* IMAGE */}
 
             <div className="w-full h-36 rounded-2xl overflow-hidden mb-4 border border-white/40">
               <img
@@ -325,6 +456,8 @@ const Inventory = () => {
                 className="w-full h-full object-cover hover:scale-105 transition-all duration-300"
               />
             </div>
+
+            {/* STATUS */}
 
             <div className="flex justify-end mb-4">
               <div
@@ -338,9 +471,13 @@ const Inventory = () => {
               </div>
             </div>
 
+            {/* TITLE */}
+
             <h2 className="text-2xl font-black text-gray-900 mb-2">
               {item.name}
             </h2>
+
+            {/* DETAILS */}
 
             <div className="flex items-center gap-2 mb-4">
               <p className="text-gray-600 text-xs">
@@ -358,6 +495,8 @@ const Inventory = () => {
                 </span>
               </div>
             </div>
+
+            {/* PRICE + STOCK */}
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-white/70 rounded-2xl p-3 border border-white/40">
@@ -380,6 +519,8 @@ const Inventory = () => {
                 </h3>
               </div>
             </div>
+
+            {/* SUPPLIER */}
 
             <div className="bg-white/70 rounded-2xl p-3 border border-white/40">
               <p className="text-gray-500 text-[9px] uppercase">
@@ -443,12 +584,6 @@ const Inventory = () => {
                 className="bg-[#F3F4F6] border border-gray-300 rounded-xl px-4 py-3 outline-none text-gray-900 text-sm"
               />
 
-              <select className="bg-[#F3F4F6] border border-gray-300 rounded-xl px-4 py-3 outline-none text-gray-900 text-sm">
-                <option>Electronics</option>
-                <option>Fashion</option>
-                <option>Appliances</option>
-              </select>
-
               <input
                 type="text"
                 placeholder="Supplier Name"
@@ -458,12 +593,6 @@ const Inventory = () => {
               <input
                 type="text"
                 placeholder="Price"
-                className="bg-[#F3F4F6] border border-gray-300 rounded-xl px-4 py-3 outline-none text-gray-900 text-sm"
-              />
-
-              <input
-                type="number"
-                placeholder="Stock Quantity"
                 className="bg-[#F3F4F6] border border-gray-300 rounded-xl px-4 py-3 outline-none text-gray-900 text-sm"
               />
             </div>
@@ -478,7 +607,84 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* POPUP */}
+      {/* EDIT MODAL */}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-300 w-full max-w-lg rounded-[28px] p-5 relative shadow-xl">
+            <button
+              onClick={() =>
+                setShowEditModal(false)
+              }
+              className="absolute top-5 right-5 bg-gray-100 p-2 rounded-xl"
+            >
+              <X
+                size={16}
+                className="text-gray-900"
+              />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-3 rounded-2xl">
+                <Pencil
+                  size={18}
+                  className="text-white"
+                />
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-black text-gray-900">
+                  Edit Product
+                </h2>
+
+                <p className="text-gray-500 text-sm mt-1">
+                  Update inventory details
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) =>
+                  setEditName(e.target.value)
+                }
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-xl px-4 py-3 outline-none text-gray-900 text-sm"
+              />
+
+              <input
+                type="text"
+                value={editPrice}
+                onChange={(e) =>
+                  setEditPrice(e.target.value)
+                }
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-xl px-4 py-3 outline-none text-gray-900 text-sm"
+              />
+
+              <input
+                type="text"
+                value={editSupplier}
+                onChange={(e) =>
+                  setEditSupplier(
+                    e.target.value
+                  )
+                }
+                className="w-full bg-[#F3F4F6] border border-gray-300 rounded-xl px-4 py-3 outline-none text-gray-900 text-sm"
+              />
+            </div>
+
+            <button
+              onClick={handleSaveEdit}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-xl font-bold text-sm mt-6"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ADD POPUP */}
 
       {showPopup && (
         <div className="fixed top-5 right-5 bg-white border border-green-300 px-5 py-3 rounded-2xl flex items-center gap-3 z-50 shadow-lg">
@@ -496,6 +702,55 @@ const Inventory = () => {
               Inventory updated successfully
             </p>
           </div>
+        </div>
+      )}
+
+      {/* EDIT POPUP */}
+
+      {showEditPopup && (
+        <div className="fixed top-5 right-5 bg-white border border-blue-300 px-5 py-3 rounded-2xl flex items-center gap-3 z-50 shadow-lg">
+          <CheckCircle2
+            size={18}
+            className="text-blue-500"
+          />
+
+          <div>
+            <h3 className="font-black text-gray-900 text-sm">
+              Changes Saved
+            </h3>
+
+            <p className="text-gray-500 text-xs">
+              Product updated successfully
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE POPUP */}
+
+      {showDeletePopup && (
+        <div className="fixed bottom-5 right-5 bg-white border border-red-300 px-5 py-3 rounded-2xl flex items-center gap-4 z-50 shadow-lg">
+          <Trash2
+            size={18}
+            className="text-red-500"
+          />
+
+          <div>
+            <h3 className="font-black text-gray-900 text-sm">
+              Product Deleted
+            </h3>
+
+            <p className="text-gray-500 text-xs">
+              You can undo this action
+            </p>
+          </div>
+
+          <button
+            onClick={handleUndoDelete}
+            className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-xl text-xs font-bold"
+          >
+            Undo
+          </button>
         </div>
       )}
     </div>
