@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, Printer, IndianRupee, Diamond, Plus, Trash2, Search } from 'lucide-react';
+import { Calculator, Printer, IndianRupee, Store, Plus, Trash2, Search } from 'lucide-react';
 import StaffNavbar from '../../components/Navbars/StaffNavbar';
 
 const StaffDashboard = () => {
-  // --- MOCK INVENTORY DATA ---
+  // --- MOCK INVENTORY DATA (Retail Items) ---
   const inventoryData = [
-    { id: 'G-1001', name: '22K Gold Bridal Necklace', category: 'GOLD', purity: '22K', weight: 45.500, hsn: '7113' },
-    { id: 'S-2005', name: '925 Silver Designer Ring', category: 'SILVER', purity: '925', weight: 12.000, hsn: '7113' },
-    { id: 'G-1045', name: '18K Diamond Rose Ring', category: 'GOLD', purity: '18K', weight: 5.200, hsn: '7113' },
-    { id: 'S-2010', name: '990 Fine Silver Bowl', category: 'SILVER', purity: '990', weight: 250.000, hsn: '7114' },
-    { id: 'G-1088', name: '24K Gold Bullion Coin', category: 'GOLD', purity: '24K', weight: 10.000, hsn: '7118' },
-    { id: 'S-2099', name: '958 Silver Anklets (Pair)', category: 'SILVER', purity: '958', weight: 45.000, hsn: '7113' }
+    { id: 'SKU-1001', name: 'Premium Basmati Rice 5kg', category: 'Grocery', price: 850.00, hsn: '1006' },
+    { id: 'SKU-2005', name: 'Sunflower Oil 1L', category: 'Grocery', price: 145.00, hsn: '1512' },
+    { id: 'SKU-1045', name: 'Wireless Mouse', category: 'Electronics', price: 499.00, hsn: '8471' },
+    { id: 'SKU-2010', name: 'Almonds 500g', category: 'Dry Fruits', price: 450.00, hsn: '0802' },
+    { id: 'SKU-1088', name: 'Washing Powder 2kg', category: 'Household', price: 320.00, hsn: '3402' },
+    { id: 'SKU-2099', name: 'Dark Chocolate Bar', category: 'Snacks', price: 99.00, hsn: '1806' }
   ];
 
   // --- STATE MANAGEMENT ---
-  const [cart, setCart] = useState([]); // Multiple items kosam Cart state
-  const [billingMode, setBillingMode] = useState('GOLD');
-  const [purity, setPurity] = useState('22K');
+  const [cart, setCart] = useState([]); 
   
   // Custom Searchable Dropdown States
   const [productSearch, setProductSearch] = useState('');
@@ -26,7 +24,8 @@ const StaffDashboard = () => {
   // Item Details States
   const [productId, setProductId] = useState('');
   const [productName, setProductName] = useState('');
-  const [hsn, setHsn] = useState('7113');
+  const [category, setCategory] = useState('Grocery');
+  const [hsn, setHsn] = useState('');
 
   // Customer & Payment Details States
   const [customerName, setCustomerName] = useState('');
@@ -34,73 +33,36 @@ const StaffDashboard = () => {
   const [paymentMode, setPaymentMode] = useState('Cash');
 
   // Calculation Input States
-  const [grossWt, setGrossWt] = useState('');
-  const [stoneWt, setStoneWt] = useState('');
-  const [wastage, setWastage] = useState('');
-  const [making, setMaking] = useState('');
-  const [scrap, setScrap] = useState('');
+  const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState('1');
   const [discount, setDiscount] = useState('');
 
-  // --- RATES DICTIONARY ---
-  const goldRates = {
-    '24K': 7200.00,
-    '22K': 6650.00,
-    '18K': 5400.00,
-    '14K': 4200.00,
-    '9K': 2700.00
-  };
-
-  const silverRates = {
-    '990': 85.00,
-    '970': 83.00,
-    '958': 81.00,
-    '925': 78.00
-  };
-
-  const handleModeSwitch = (mode) => {
-    setBillingMode(mode);
-    setPurity(mode === 'GOLD' ? '22K' : '990');
-  };
-
   // --- LIVE PREVIEW CALCULATIONS (For current form inputs) ---
-  const currentRate = billingMode === 'GOLD' ? goldRates[purity] : silverRates[purity];
-  const gWt = parseFloat(grossWt) || 0;
-  const sWt = parseFloat(stoneWt) || 0;
-  const wPer = parseFloat(wastage) || 0;
-  const mChg = parseFloat(making) || 0;
-  const sExch = parseFloat(scrap) || 0;
-  const disc = parseFloat(discount) || 0;
+  const p = parseFloat(price) || 0;
+  const q = parseFloat(quantity) || 1;
+  const d = parseFloat(discount) || 0;
 
-  const netWt = gWt > sWt ? gWt - sWt : 0;
-  const metalValue = netWt * currentRate;
-  const wastageAmt = (wPer / 100) * metalValue;
-  const totalValue = metalValue + wastageAmt;
-  let itemTaxableAmount = totalValue + mChg - sExch - disc;
+  const baseAmount = p * q;
+  let itemTaxableAmount = baseAmount - d;
   if (itemTaxableAmount < 0) itemTaxableAmount = 0;
 
   // --- ADD ITEM TO CART LOGIC ---
   const handleAddItem = () => {
-    if (!productName || !grossWt) {
-      alert("Please enter Product Name and Gross Weight!");
+    if (!productName || !price || !quantity) {
+      alert("Please enter Product Name, Price and Quantity!");
       return;
     }
 
     const newItem = {
-      id: Date.now().toString(), // Unique ID for cart row
+      id: Date.now().toString(),
       productId,
       productName,
-      purity,
+      category,
       hsn,
-      rate: currentRate,
-      grossWt: gWt,
-      stoneWt: sWt,
-      netWt,
-      wastage: wPer,
-      wastageAmt,
-      making: mChg,
-      scrap: sExch,
-      discount: disc,
-      metalValue,
+      price: p,
+      quantity: q,
+      discount: d,
+      baseAmount,
       taxableAmount: itemTaxableAmount
     };
 
@@ -110,12 +72,10 @@ const StaffDashboard = () => {
     setProductId('');
     setProductSearch('');
     setProductName('');
-    setGrossWt('');
-    setStoneWt('');
-    setWastage('');
-    setMaking('');
-    setScrap('');
+    setPrice('');
+    setQuantity('1');
     setDiscount('');
+    setHsn('');
   };
 
   // --- REMOVE ITEM FROM CART ---
@@ -125,18 +85,15 @@ const StaffDashboard = () => {
 
   // --- CART TOTALS AGGREGATION ---
   const totals = cart.reduce((acc, item) => {
-    acc.metalValue += item.metalValue;
-    acc.wastageAmt += item.wastageAmt;
-    acc.making += item.making;
-    acc.scrap += item.scrap;
+    acc.baseAmount += item.baseAmount;
     acc.discount += item.discount;
     acc.taxableAmount += item.taxableAmount;
     return acc;
   }, {
-    metalValue: 0, wastageAmt: 0, making: 0, scrap: 0, discount: 0, taxableAmount: 0
+    baseAmount: 0, discount: 0, taxableAmount: 0
   });
 
-  const totalGstAmt = totals.taxableAmount * 0.03;
+  const totalGstAmt = totals.taxableAmount * 0.05; // 5% Standard GST for retail example
   const grandTotal = totals.taxableAmount + totalGstAmt;
 
   // =========================================================
@@ -151,7 +108,7 @@ const StaffDashboard = () => {
     // Creating thermal receipt HTML dynamically
     const htmlContent = `
       <div style="text-align: center; margin-bottom: 8px; line-height: 1.2;">
-        <h1 style="font-size: 18px; font-weight: bold; margin: 0 0 4px 0;">AK GOLD & SILVER</h1>
+        <h1 style="font-size: 18px; font-weight: bold; margin: 0 0 4px 0;">RETAIL MASTER</h1>
         <p style="margin: 0; font-size: 12px;">Main Road, Hyderabad, TS</p>
         <p style="margin: 0; font-size: 12px;">GSTIN: 36ABCDE1234F1Z5</p>
         <p style="margin: 0; font-size: 12px;">Ph: +91 9876543210</p>
@@ -178,12 +135,17 @@ const StaffDashboard = () => {
       ${cart.map(item => `
         <div style="margin-bottom: 8px; font-size: 12px;">
           <p style="font-weight: bold; text-transform: uppercase; margin: 0 0 4px 0;">
-            ${item.productName} (${item.purity})
+            ${item.productName}
           </p>
           <div style="display: flex; justify-content: space-between;">
-            <span>NetWt:${item.netWt.toFixed(3)}g x ${item.rate.toFixed(2)}</span>
-            <span>${item.metalValue.toFixed(2)}</span>
+            <span>Qty: ${item.quantity} x ₹${item.price.toFixed(2)}</span>
+            <span>${item.baseAmount.toFixed(2)}</span>
           </div>
+          ${item.discount > 0 ? `
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #555;">
+            <span>Discount Applied</span>
+            <span>-${item.discount.toFixed(2)}</span>
+          </div>` : ''}
         </div>
       `).join('')}
 
@@ -191,21 +153,12 @@ const StaffDashboard = () => {
 
       <div style="line-height: 1.4; font-size: 12px;">
         <div style="display: flex; justify-content: space-between;">
-          <span>Total Wastage</span>
-          <span>${totals.wastageAmt.toFixed(2)}</span>
+          <span>Sub Total</span>
+          <span>${totals.baseAmount.toFixed(2)}</span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>Total Making Chg</span>
-          <span>${totals.making.toFixed(2)}</span>
-        </div>
-        ${totals.scrap > 0 ? `
-        <div style="display: flex; justify-content: space-between;">
-          <span>Scrap Exchange</span>
-          <span>-${totals.scrap.toFixed(2)}</span>
-        </div>` : ''}
         ${totals.discount > 0 ? `
         <div style="display: flex; justify-content: space-between;">
-          <span>Total Discount</span>
+          <span>Total Savings</span>
           <span>-${totals.discount.toFixed(2)}</span>
         </div>` : ''}
         
@@ -214,11 +167,11 @@ const StaffDashboard = () => {
           <span>${totals.taxableAmount.toFixed(2)}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>CGST (1.5%)</span>
+          <span>CGST (2.5%)</span>
           <span>${(totalGstAmt / 2).toFixed(2)}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>SGST (1.5%)</span>
+          <span>SGST (2.5%)</span>
           <span>${(totalGstAmt / 2).toFixed(2)}</span>
         </div>
       </div>
@@ -301,29 +254,15 @@ const StaffDashboard = () => {
           >
             {/* Top Controls */}
             <div className="bg-[#1a1a1a] p-5 rounded-xl border border-gray-800 shadow-lg flex justify-between items-center">
-              <h2 className="text-[#DAA520] font-bold text-lg flex items-center gap-2">
-                <Calculator size={20} /> INVOICE GENERATION
+              <h2 className="text-blue-500 font-bold text-lg flex items-center gap-2">
+                <Calculator size={20} /> POINT OF SALE
               </h2>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => handleModeSwitch('GOLD')}
-                  className={`px-6 py-2 rounded font-bold text-sm transition-all ${billingMode === 'GOLD' ? 'bg-gradient-to-r from-[#B8860B] to-[#DAA520] text-black shadow-[0_0_15px_rgba(218,165,32,0.4)]' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}
-                >
-                  GOLD
-                </button>
-                <button 
-                  onClick={() => handleModeSwitch('SILVER')}
-                  className={`px-6 py-2 rounded font-bold text-sm transition-all ${billingMode === 'SILVER' ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-black shadow-[0_0_15px_rgba(200,200,200,0.4)]' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}
-                >
-                  SILVER
-                </button>
-              </div>
             </div>
 
             {/* Form Grid */}
             <div className="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg">
               
-              {/* Row 1: Item Details & Purity */}
+              {/* Row 1: Item Details */}
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-800 pb-2">Item Details</h3>
               <div className="grid grid-cols-4 gap-4 mb-6 relative">
                 
@@ -340,8 +279,8 @@ const StaffDashboard = () => {
                       }}
                       onFocus={() => setShowDropdown(true)}
                       onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                      className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none pl-8" 
-                      placeholder="Type to search..." 
+                      className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none pl-8" 
+                      placeholder="Search SKU or Name..." 
                     />
                     <Search className="absolute left-2.5 top-2.5 text-gray-500" size={16} />
                   </div>
@@ -354,19 +293,19 @@ const StaffDashboard = () => {
                         .map(item => (
                         <div 
                           key={item.id} 
-                          className="p-2.5 hover:bg-[#DAA520] hover:text-black cursor-pointer text-sm transition-colors text-gray-300"
+                          className="p-2.5 hover:bg-blue-600 hover:text-white cursor-pointer text-sm transition-colors text-gray-300 border-b border-gray-800 last:border-0"
                           onClick={() => {
                             setProductId(item.id);
                             setProductName(item.name);
                             setProductSearch(`${item.id} - ${item.name}`);
-                            setBillingMode(item.category);
-                            setPurity(item.purity);
-                            setGrossWt(item.weight.toString());
+                            setCategory(item.category);
+                            setPrice(item.price.toString());
+                            setQuantity('1');
                             setHsn(item.hsn);
                             setShowDropdown(false);
                           }}
                         >
-                          <span className="font-bold">{item.id}</span> - {item.name}
+                          <span className="font-bold text-blue-400">{item.id}</span> - {item.name}
                         </div>
                       ))}
                     </div>
@@ -375,119 +314,68 @@ const StaffDashboard = () => {
 
                 <div>
                   <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Product Name</label>
-                  <input type="text" value={productName} onChange={(e)=>setProductName(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none" placeholder="e.g. Necklace" />
+                  <input type="text" value={productName} onChange={(e)=>setProductName(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none" placeholder="e.g. Rice 5kg" />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-[#DAA520] mb-1 uppercase tracking-wide font-bold">Purity</label>
+                  <label className="block text-[11px] text-blue-500 mb-1 uppercase tracking-wide font-bold">Category</label>
                   <select 
-                    value={purity} 
-                    onChange={(e) => setPurity(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none font-bold"
+                    value={category} 
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none font-bold"
                   >
-                    {billingMode === 'GOLD' ? (
-                      <>
-                        <option value="24K">24K (99.9%)</option>
-                        <option value="22K">22K (91.6%)</option>
-                        <option value="18K">18K (75.0%)</option>
-                        <option value="14K">14K (58.3%)</option>
-                        <option value="9K">9K (37.5%)</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="990">990 Fine</option>
-                        <option value="970">970 Fine</option>
-                        <option value="958">958 Britannia</option>
-                        <option value="925">925 Sterling</option>
-                      </>
-                    )}
+                    <option value="Grocery">Grocery</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Household">Household</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">HSN / SAC</label>
-                  <input type="text" value={hsn} onChange={(e)=>setHsn(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none" placeholder="7113" />
+                  <input type="text" value={hsn} onChange={(e)=>setHsn(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none" placeholder="e.g. 1006" />
                 </div>
               </div>
 
-              {/* Row 2: Weight & Charges */}
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-800 pb-2">Weight & Charges</h3>
+              {/* Row 2: Pricing & Quantity */}
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-800 pb-2">Pricing & Quantity</h3>
               <div className="grid grid-cols-4 gap-4 mb-6">
                 <div>
-                  <label className="block text-[11px] text-[#DAA520] mb-1 uppercase tracking-wide">Gross Wt. (gm)</label>
+                  <label className="block text-[11px] text-blue-400 mb-1 uppercase tracking-wide">Unit Price (₹)</label>
                   <input 
                     type="number" 
-                    value={grossWt}
-                    onChange={(e) => setGrossWt(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none font-mono" 
-                    placeholder="0.000" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Stone Wt. (gm)</label>
-                  <input 
-                    type="number" 
-                    value={stoneWt}
-                    onChange={(e) => setStoneWt(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none font-mono" 
-                    placeholder="0.000" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-green-400 mb-1 uppercase tracking-wide font-bold">Net Wt. (gm)</label>
-                  <input 
-                    type="text" 
-                    value={netWt > 0 ? netWt.toFixed(3) : '0.000'}
-                    disabled 
-                    className="w-full bg-black border border-gray-800 rounded p-2.5 text-green-400 outline-none font-mono font-bold" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Wastage (%)</label>
-                  <input 
-                    type="number" 
-                    value={wastage}
-                    onChange={(e) => setWastage(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none" 
-                    placeholder="0.0" 
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Making Charges (₹)</label>
-                  <input 
-                    type="number" 
-                    value={making}
-                    onChange={(e) => setMaking(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none" 
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none font-mono" 
                     placeholder="0.00" 
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-red-400 mb-1 uppercase tracking-wide">Scrap Exchange (₹)</label>
+                  <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Quantity</label>
                   <input 
                     type="number" 
-                    value={scrap}
-                    onChange={(e) => setScrap(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-red-200 focus:border-red-500 outline-none" 
-                    placeholder="0.00" 
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none font-mono" 
+                    placeholder="1" 
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-blue-400 mb-1 uppercase tracking-wide">Discount (₹)</label>
+                  <label className="block text-[11px] text-green-400 mb-1 uppercase tracking-wide">Discount (₹)</label>
                   <input 
                     type="number" 
                     value={discount}
                     onChange={(e) => setDiscount(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-blue-200 focus:border-blue-500 outline-none" 
+                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-green-200 focus:border-green-500 outline-none" 
                     placeholder="0.00" 
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Current Rate (₹)</label>
+                  <label className="block text-[11px] text-white mb-1 uppercase tracking-wide font-bold">Net Amount (₹)</label>
                   <input 
                     type="text" 
-                    value={currentRate.toFixed(2)}
+                    value={itemTaxableAmount.toFixed(2)}
                     disabled 
-                    className="w-full bg-black border border-gray-800 rounded p-2.5 text-gray-400 outline-none font-mono" 
+                    className="w-full bg-black border border-gray-800 rounded p-2.5 text-white outline-none font-mono font-bold" 
                   />
                 </div>
               </div>
@@ -495,7 +383,7 @@ const StaffDashboard = () => {
               {/* Add Item Button */}
               <button 
                 onClick={handleAddItem}
-                className="w-full bg-[#202020] border border-gray-700 hover:border-[#DAA520] hover:bg-[#DAA520] hover:text-black text-[#DAA520] font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors mb-6"
+                className="w-full bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600 hover:text-white text-blue-400 font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all mb-6 shadow-lg shadow-blue-500/5"
               >
                 <Plus size={20} /> ADD ITEM TO BILL
               </button>
@@ -505,18 +393,18 @@ const StaffDashboard = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Customer Name</label>
-                  <input type="text" value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none" placeholder="Enter name" />
+                  <input type="text" value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none" placeholder="Enter name" />
                 </div>
                 <div>
                   <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Mobile Number</label>
-                  <input type="text" value={mobile} onChange={(e)=>setMobile(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none" placeholder="+91" />
+                  <input type="text" value={mobile} onChange={(e)=>setMobile(e.target.value)} className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none" placeholder="+91" />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-[#DAA520] mb-1 uppercase tracking-wide font-bold">Payment Mode</label>
+                  <label className="block text-[11px] text-blue-500 mb-1 uppercase tracking-wide font-bold">Payment Mode</label>
                   <select 
                     value={paymentMode} 
                     onChange={(e) => setPaymentMode(e.target.value)}
-                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-[#DAA520] outline-none font-bold"
+                    className="w-full bg-[#121212] border border-gray-700 rounded p-2.5 text-white focus:border-blue-500 outline-none font-bold"
                   >
                     <option value="Cash">Cash</option>
                     <option value="Card">Card / POS</option>
@@ -535,91 +423,71 @@ const StaffDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-6 flex flex-col h-full"
           >
-            {/* Live Rates Card */}
-            <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] p-5 rounded-xl border border-[#DAA520]/20 shadow-lg relative overflow-hidden">
-               <div className="absolute -right-6 -top-6 text-[#DAA520] opacity-5">
-                  <Diamond size={100} />
-               </div>
-               <h3 className="text-[#DAA520] text-xs font-bold tracking-widest uppercase mb-3 border-b border-[#DAA520]/20 pb-2">Today's Bullion Rates</h3>
-               <div className="flex justify-between items-center mb-2">
-                  <span className={`font-medium ${billingMode === 'GOLD' ? 'text-[#DAA520]' : 'text-gray-400'}`}>Gold Base (24K)</span>
-                  <span className={`font-mono font-bold tracking-wide ${billingMode === 'GOLD' ? 'text-[#DAA520]' : 'text-gray-400'}`}>₹ {goldRates['24K'].toFixed(2)}</span>
-               </div>
-               <div className="flex justify-between items-center">
-                  <span className={`font-medium ${billingMode === 'SILVER' ? 'text-gray-200' : 'text-gray-400'}`}>Silver Base (990)</span>
-                  <span className={`font-mono font-bold tracking-wide ${billingMode === 'SILVER' ? 'text-gray-200' : 'text-gray-400'}`}>₹ {silverRates['990'].toFixed(2)}</span>
-               </div>
-            </div>
-
             {/* Final Summary Card */}
             <div className="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg flex flex-col flex-grow">
               <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
                 <h3 className="text-white text-lg font-bold flex items-center gap-2">
-                  <IndianRupee size={18} className="text-[#DAA520]"/> BILL SUMMARY
+                  <IndianRupee size={18} className="text-blue-500"/> BILL SUMMARY
                 </h3>
                 <span className="bg-gray-800 text-xs px-2 py-1 rounded text-gray-300 font-bold">{cart.length} Items</span>
               </div>
               
               {/* CART ITEMS LIST */}
               {cart.length > 0 ? (
-                <div className="mb-4 max-h-40 overflow-y-auto space-y-2 pr-2">
+                <div className="mb-4 max-h-[300px] overflow-y-auto space-y-2 pr-2">
                   {cart.map((item, idx) => (
                     <div key={item.id} className="bg-[#121212] p-3 rounded border border-gray-800 flex justify-between items-center group">
                       <div>
                         <p className="text-sm font-bold text-gray-200 line-clamp-1">{idx + 1}. {item.productName}</p>
                         <p className="text-xs text-gray-500 font-mono mt-1">
-                          {item.netWt.toFixed(3)}g @ {item.purity} | Taxable: ₹{item.taxableAmount.toFixed(2)}
+                          Qty: {item.quantity} x ₹{item.price.toFixed(2)} {item.discount > 0 && `(Disc: ₹${item.discount})`}
                         </p>
                       </div>
-                      <button onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-400 p-2 opacity-70 hover:opacity-100 transition-opacity">
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-sm font-bold text-white">₹{item.taxableAmount.toFixed(2)}</span>
+                        <button onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-400 p-1 opacity-70 hover:opacity-100 transition-opacity">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="mb-4 text-center py-6 text-gray-600 border border-dashed border-gray-800 rounded bg-[#121212]/50">
-                  <p className="text-sm">No items added to bill yet.</p>
+                <div className="mb-4 text-center py-10 text-gray-600 border border-dashed border-gray-800 rounded bg-[#121212]/50 flex-grow flex flex-col items-center justify-center">
+                  <Store size={40} className="mb-3 opacity-20" />
+                  <p className="text-sm">Scan or add items to generate bill.</p>
                 </div>
               )}
 
               <div className="space-y-3 flex-grow mt-auto">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Metal Value</span>
-                  <span className="font-mono text-gray-200">₹ {totals.metalValue.toFixed(2)}</span>
+                  <span className="text-gray-400">Sub Total</span>
+                  <span className="font-mono text-gray-200">₹ {totals.baseAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Wastage</span>
-                  <span className="font-mono text-gray-200">+ ₹ {totals.wastageAmt.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Making Chg</span>
-                  <span className="font-mono text-gray-200">+ ₹ {totals.making.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Scrap/Discount</span>
-                  <span className="font-mono text-red-400">- ₹ {(totals.scrap + totals.discount).toFixed(2)}</span>
+                  <span className="text-gray-400">Total Discount</span>
+                  <span className="font-mono text-green-400">- ₹ {totals.discount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm border-t border-gray-800 pt-3">
-                  <span className="text-gray-300 font-bold">Total Taxable</span>
+                  <span className="text-gray-300 font-bold">Taxable Amount</span>
                   <span className="font-mono text-gray-200 font-bold">₹ {totals.taxableAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">GST (3%)</span>
-                  <span className="font-mono text-yellow-500">+ ₹ {totalGstAmt.toFixed(2)}</span>
+                  <span className="text-gray-400">GST (5%)</span>
+                  <span className="font-mono text-blue-400">+ ₹ {totalGstAmt.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Grand Total */}
-              <div className="bg-[#121212] rounded-lg p-4 mt-6 border border-[#DAA520]/30 text-center">
+              <div className="bg-[#121212] rounded-lg p-4 mt-6 border border-blue-500/30 text-center">
                  <p className="text-gray-400 text-xs tracking-widest uppercase mb-1">Grand Total</p>
-                 <h2 className="text-[#DAA520] text-3xl font-bold font-mono">₹ {grandTotal.toFixed(2)}</h2>
+                 <h2 className="text-blue-500 text-3xl font-bold font-mono">₹ {grandTotal.toFixed(2)}</h2>
               </div>
 
               {/* Print Button */}
               <button 
                 onClick={handlePrint}
-                className={`w-full mt-4 font-extrabold tracking-widest py-4 rounded-lg flex items-center justify-center gap-3 transition-all ${cart.length > 0 ? 'bg-gradient-to-r from-[#B8860B] to-[#DAA520] hover:from-[#DAA520] hover:to-[#FFD700] text-black shadow-[0_5px_20px_rgba(218,165,32,0.3)]' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+                className={`w-full mt-4 font-extrabold tracking-widest py-4 rounded-lg flex items-center justify-center gap-3 transition-all ${cart.length > 0 ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_5px_20px_rgba(37,99,235,0.3)]' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
                 disabled={cart.length === 0}
               >
                 <Printer size={20} />
