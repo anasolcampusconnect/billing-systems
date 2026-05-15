@@ -135,7 +135,7 @@ const Inventory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#E5E7EB] p-4">
+    <div className="min-h-screen bg-slate-50 p-4">
       {/* HEADER */}
 
       <div className="bg-white border border-gray-300 rounded-[24px] p-4 mb-5 shadow-sm">
