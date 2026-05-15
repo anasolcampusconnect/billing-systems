@@ -232,7 +232,7 @@ const Hospitality = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#E5E7EB] p-4 overflow-hidden relative">
+    <div className="min-h-screen bg-slant-50 p-4 overflow-hidden relative">
       {/* BACKGROUND */}
 
       <div className="absolute top-0 left-0 w-[320px] h-[320px] bg-cyan-300/20 blur-[120px] rounded-full"></div>

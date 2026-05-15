@@ -293,7 +293,7 @@ const Ticketing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] p-5 overflow-hidden">
+    <div className="min-h-screen bg-slant-50 p-5 overflow-hidden">
       {/* BACKGROUND */}
 
       <div className="fixed top-0 left-0 w-[420px] h-[420px] bg-cyan-300/20 blur-[130px] rounded-full"></div>
