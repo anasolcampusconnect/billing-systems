@@ -1,255 +1,526 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Scale, Search, Plus, MoreVertical, X, Edit, Eye, Trash2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import React, { useMemo, useState } from "react";
+import {
+  Wallet,
+  Search,
+  Filter,
+  Download,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Landmark,
+  Receipt,
+  CalendarDays,
+  Plus,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
+  BadgeIndianRupee,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 
 const BalanceStatements = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [search, setSearch] = useState("");
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
-  // 1. Static Data for Balance Statements
-  const [statementsData, setStatementsData] = useState([
-    { id: 'BAL-1004', date: '15 May 2026', description: 'Daily Sales Settlement', type: 'Credit', amount: 45000, closingBalance: 245000, status: 'Completed' },
-    { id: 'BAL-1003', date: '14 May 2026', description: 'Supplier Payment (Vendor A)', type: 'Debit', amount: 12500, closingBalance: 200000, status: 'Completed' },
-    { id: 'BAL-1002', date: '14 May 2026', description: 'Store Rent - May', type: 'Debit', amount: 25000, closingBalance: 212500, status: 'Pending' },
-    { id: 'BAL-1001', date: '13 May 2026', description: 'Opening Balance', type: 'Credit', amount: 237500, closingBalance: 237500, status: 'Completed' },
-  ]);
-
-  // 2. Form State for New Statement Entry
   const [formData, setFormData] = useState({
-    description: '',
-    type: 'Credit',
-    amount: ''
+    reference: "",
+    type: "Credit",
+    amount: "",
+    paymentMode: "",
+    date: "",
+    remarks: "",
   });
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const [statements, setStatements] = useState([
+    {
+      id: "BAL-1001",
+      reference: "Cash Counter Deposit",
+      type: "Credit",
+      amount: 24500,
+      paymentMode: "Cash",
+      date: "15 May 2026",
+      remarks: "Morning shift settlement",
+      status: "Completed",
+    },
+    {
+      id: "BAL-1002",
+      reference: "Supplier Payment",
+      type: "Debit",
+      amount: 12800,
+      paymentMode: "Bank Transfer",
+      date: "15 May 2026",
+      remarks: "Fresh vegetables stock",
+      status: "Completed",
+    },
+    {
+      id: "BAL-1003",
+      reference: "UPI Collection",
+      type: "Credit",
+      amount: 8650,
+      paymentMode: "UPI",
+      date: "14 May 2026",
+      remarks: "Evening sales",
+      status: "Pending",
+    },
+  ]);
 
-  // 3. Handle Form Submit
-  const handleAddSubmit = (e) => {
+  const filteredStatements = useMemo(() => {
+    const q = search.toLowerCase();
+
+    return statements.filter(
+      (item) =>
+        item.reference.toLowerCase().includes(q) ||
+        item.paymentMode.toLowerCase().includes(q) ||
+        item.type.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q)
+    );
+  }, [search, statements]);
+
+  const handleSave = (e) => {
     e.preventDefault();
-    
-    const newId = `BAL-${1004 + statementsData.length}`;
-    const amountVal = parseFloat(formData.amount) || 0;
-    
-    // Auto-calculate dummy closing balance based on the first item in the list
-    const lastBalance = statementsData.length > 0 ? statementsData[0].closingBalance : 0;
-    const newClosingBalance = formData.type === 'Credit' ? lastBalance + amountVal : lastBalance - amountVal;
 
-    const newStatement = {
-      id: newId,
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      description: formData.description,
+    const newEntry = {
+      id: `BAL-${1000 + statements.length + 1}`,
+      reference: formData.reference,
       type: formData.type,
-      amount: amountVal,
-      closingBalance: newClosingBalance,
-      status: 'Completed'
+      amount: Number(formData.amount),
+      paymentMode: formData.paymentMode,
+      date: formData.date,
+      remarks: formData.remarks,
+      status: "Completed",
     };
 
-    setStatementsData([newStatement, ...statementsData]);
-    setShowAddModal(false);
-    setFormData({ description: '', type: 'Credit', amount: '' });
-  };
+    setStatements([newEntry, ...statements]);
 
-  // Delete Function
-  const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this transaction record?");
-    if (confirmDelete) {
-      setStatementsData(statementsData.filter(item => item.id !== id));
-      setActiveDropdown(null);
-    }
-  };
+    setFormData({
+      reference: "",
+      type: "Credit",
+      amount: "",
+      paymentMode: "",
+      date: "",
+      remarks: "",
+    });
 
-  const filteredData = statementsData.filter(item => 
-    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    setShowModal(false);
+  };
 
   return (
-    <div className="space-y-6 relative" onClick={() => activeDropdown && setActiveDropdown(null)}>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        
-        {/* Top Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-600/20 p-3 rounded-lg border border-amber-500/30">
-              <Scale className="text-amber-500" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Balance Statements</h2>
-              <p className="text-sm text-gray-500">Track your store's credits, debits, and cash flow</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#f5f7fb] p-6 space-y-6">
+      {/* HEADER */}
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-              <input
-                type="text"
-                placeholder="Search transactions..."
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-amber-500 text-white text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+        <div>
+          <h1 className="text-4xl font-black text-slate-800 tracking-tight">
+            Balance Statements
+          </h1>
+
+          <p className="text-slate-500 font-semibold mt-2">
+            Monitor credits, debits, settlements & payment movements
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowModal(true)}
+          className="h-14 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black flex items-center gap-2 shadow-lg shadow-indigo-100 transition-all"
+        >
+          <Plus size={18} />
+          CREATE ENTRY
+        </button>
+      </div>
+
+      {/* ANALYTICS */}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="uppercase text-[11px] tracking-widest text-slate-400 font-black">
+                Current Balance
+              </p>
+
+              <h2 className="text-4xl font-black text-slate-800 mt-3">
+                ₹4.8L
+              </h2>
             </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm whitespace-nowrap shadow-[0_0_15px_rgba(217,119,6,0.3)]"
-            >
-              <Plus size={18} /> New Entry
-            </button>
+
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Wallet size={28} />
+            </div>
           </div>
         </div>
 
-        {/* Data Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-visible shadow-lg">
-          <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#121212] border-b border-gray-800 text-gray-400 uppercase text-xs font-bold tracking-wider">
-                <tr>
-                  <th className="p-4">Txn ID</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4">Description</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Amount</th>
-                  <th className="p-4">Closing Bal.</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 font-mono text-amber-400 font-medium">{item.id}</td>
-                    <td className="p-4 text-gray-400">{item.date}</td>
-                    <td className="p-4 text-gray-200 font-bold">{item.description}</td>
-                    <td className="p-4">
-                      {item.type === 'Credit' ? (
-                        <span className="flex items-center gap-1 text-green-400 font-bold text-xs bg-green-500/10 px-2 py-1 rounded w-fit">
-                          <ArrowDownLeft size={14} /> IN
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-red-400 font-bold text-xs bg-red-500/10 px-2 py-1 rounded w-fit">
-                          <ArrowUpRight size={14} /> OUT
-                        </span>
-                      )}
-                    </td>
-                    <td className={`p-4 font-mono font-bold ${item.type === 'Credit' ? 'text-green-400' : 'text-red-400'}`}>
-                      {item.type === 'Credit' ? '+' : '-'}₹{item.amount.toLocaleString('en-IN')}
-                    </td>
-                    <td className="p-4 text-gray-200 font-mono font-bold">₹{item.closingBalance.toLocaleString('en-IN')}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        item.status === 'Completed' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                        'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center relative">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === item.id ? null : item.id); }} 
-                        className="text-gray-500 hover:text-amber-500 transition-colors p-1"
-                      >
-                        <MoreVertical size={18} />
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="uppercase text-[11px] tracking-widest text-slate-400 font-black">
+                Total Credits
+              </p>
+
+              <h2 className="text-4xl font-black text-emerald-600 mt-3">
+                ₹9.2L
+              </h2>
+            </div>
+
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <TrendingUp size={28} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="uppercase text-[11px] tracking-widest text-slate-400 font-black">
+                Total Debits
+              </p>
+
+              <h2 className="text-4xl font-black text-rose-600 mt-3">
+                ₹4.4L
+              </h2>
+            </div>
+
+            <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+              <TrendingDown size={28} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="uppercase text-[11px] tracking-widest text-slate-400 font-black">
+                Pending Settlements
+              </p>
+
+              <h2 className="text-4xl font-black text-orange-500 mt-3">
+                18
+              </h2>
+            </div>
+
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center">
+              <Receipt size={28} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TOOLBAR */}
+
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 flex flex-col xl:flex-row gap-4 xl:items-center xl:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Search balance entries..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-[320px] h-12 rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <button className="h-12 px-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center gap-2 text-slate-600 font-semibold">
+            <Filter size={16} />
+            Filters
+          </button>
+
+          <button className="h-12 px-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center gap-2 text-slate-600 font-semibold">
+            <Download size={16} />
+            Export
+          </button>
+        </div>
+      </div>
+
+      {/* TABLE */}
+
+      <div className="bg-white border border-slate-200 rounded-[32px] overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr className="text-left uppercase text-[11px] tracking-widest text-slate-400">
+              <th className="p-5">Reference</th>
+              <th className="p-5">Type</th>
+              <th className="p-5">Payment Mode</th>
+              <th className="p-5">Amount</th>
+              <th className="p-5">Date</th>
+              <th className="p-5">Status</th>
+              <th className="p-5"></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredStatements.map((item) => (
+              <tr
+                key={item.id}
+                className="border-b border-slate-100 hover:bg-slate-50 transition-all"
+              >
+                <td className="p-5">
+                  <div>
+                    <h3 className="font-black text-slate-800 text-sm">
+                      {item.reference}
+                    </h3>
+
+                    <p className="text-xs text-slate-400 font-semibold mt-1">
+                      {item.id}
+                    </p>
+                  </div>
+                </td>
+
+                <td className="p-5">
+                  {item.type === "Credit" ? (
+                    <span className="inline-flex items-center gap-2 text-emerald-600 font-bold text-sm">
+                      <ArrowDownCircle size={16} />
+                      Credit
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-rose-600 font-bold text-sm">
+                      <ArrowUpCircle size={16} />
+                      Debit
+                    </span>
+                  )}
+                </td>
+
+                <td className="p-5 font-semibold text-slate-600">
+                  {item.paymentMode}
+                </td>
+
+                <td className="p-5">
+                  <div
+                    className={`font-black text-lg ${
+                      item.type === "Credit"
+                        ? "text-emerald-600"
+                        : "text-rose-600"
+                    }`}
+                  >
+                    ₹{item.amount.toLocaleString()}
+                  </div>
+                </td>
+
+                <td className="p-5">
+                  <div className="flex items-center gap-2 text-slate-500 font-semibold">
+                    <CalendarDays size={16} />
+                    {item.date}
+                  </div>
+                </td>
+
+                <td className="p-5">
+                  <span
+                    className={`px-3 py-1 rounded-xl text-xs font-bold ${
+                      item.status === "Completed"
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "bg-orange-50 text-orange-500"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </td>
+
+                <td className="p-5 relative">
+                  <button
+                    onClick={() =>
+                      setActiveMenu(
+                        activeMenu === item.id ? null : item.id
+                      )
+                    }
+                    className="p-2 hover:bg-slate-100 rounded-xl"
+                  >
+                    <MoreVertical size={18} />
+                  </button>
+
+                  {activeMenu === item.id && (
+                    <div className="absolute right-5 top-14 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50">
+                      <button className="w-full px-4 py-3 hover:bg-slate-50 flex items-center gap-3 text-sm font-semibold text-slate-700">
+                        <Eye size={16} />
+                        View Details
                       </button>
 
-                      {/* Dropdown Menu */}
-                      <AnimatePresence>
-                        {activeDropdown === item.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-10 top-4 w-36 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Eye size={14} /> View Receipt
-                            </button>
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Edit size={14} /> Edit Record
-                            </button>
-                            <div className="border-t border-gray-800 my-1"></div>
-                            <button 
-                              onClick={() => handleDelete(item.id)}
-                              className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </td>
-                  </tr>
-                ))}
-                {filteredData.length === 0 && (
-                  <tr>
-                    <td colSpan="8" className="p-8 text-center text-gray-500">
-                      No transaction records found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </motion.div>
+                      <button className="w-full px-4 py-3 hover:bg-slate-50 flex items-center gap-3 text-sm font-semibold text-slate-700">
+                        <Edit size={16} />
+                        Edit Entry
+                      </button>
 
-      {/* Add Record Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} 
-              className="relative bg-[#1a1a1a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden z-[110]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus size={20} className="text-amber-500"/> Add Transaction
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
+                      <button className="w-full px-4 py-3 hover:bg-rose-50 flex items-center gap-3 text-sm font-semibold text-rose-600">
+                        <Trash2 size={16} />
+                        Delete Entry
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-              <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Description / Note</label>
-                  <input type="text" name="description" required value={formData.description} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-amber-500 outline-none" placeholder="e.g. Electricity Bill" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Transaction Type</label>
-                    <select name="type" value={formData.type} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-amber-500 outline-none font-bold">
-                      <option value="Credit" className="text-green-500">Credit (Money IN)</option>
-                      <option value="Debit" className="text-red-500">Debit (Money OUT)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Amount (₹)</label>
-                    <input type="number" name="amount" required min="1" value={formData.amount} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-amber-500 outline-none font-mono" placeholder="0.00" />
-                  </div>
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition-colors">Cancel</button>
-                  <button type="submit" className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-lg transition-colors">Save Record</button>
-                </div>
-              </form>
-            </motion.div>
+        {filteredStatements.length === 0 && (
+          <div className="p-20 text-center text-slate-400 uppercase tracking-widest font-bold">
+            No Balance Statements Found
           </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* MODAL */}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-white rounded-[32px] border border-slate-200 p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-black text-slate-800">
+                  Create Balance Entry
+                </h2>
+
+                <p className="text-slate-500 font-medium mt-2">
+                  Add debit or credit transaction records
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleSave}
+              className="grid grid-cols-1 md:grid-cols-2 gap-5"
+            >
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">
+                  Reference
+                </label>
+
+                <input
+                  required
+                  type="text"
+                  value={formData.reference}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      reference: e.target.value,
+                    })
+                  }
+                  className="w-full h-12 rounded-2xl border border-slate-200 px-4 outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">
+                  Type
+                </label>
+
+                <select
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      type: e.target.value,
+                    })
+                  }
+                  className="w-full h-12 rounded-2xl border border-slate-200 px-4 outline-none focus:ring-2 focus:ring-indigo-200"
+                >
+                  <option>Credit</option>
+                  <option>Debit</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">
+                  Amount
+                </label>
+
+                <input
+                  required
+                  type="number"
+                  value={formData.amount}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      amount: e.target.value,
+                    })
+                  }
+                  className="w-full h-12 rounded-2xl border border-slate-200 px-4 outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">
+                  Payment Mode
+                </label>
+
+                <select
+                  value={formData.paymentMode}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      paymentMode: e.target.value,
+                    })
+                  }
+                  className="w-full h-12 rounded-2xl border border-slate-200 px-4 outline-none focus:ring-2 focus:ring-indigo-200"
+                >
+                  <option value="">Select</option>
+                  <option>Cash</option>
+                  <option>UPI</option>
+                  <option>Card</option>
+                  <option>Bank Transfer</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">
+                  Date
+                </label>
+
+                <input
+                  required
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      date: e.target.value,
+                    })
+                  }
+                  className="w-full h-12 rounded-2xl border border-slate-200 px-4 outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">
+                  Remarks
+                </label>
+
+                <input
+                  type="text"
+                  value={formData.remarks}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      remarks: e.target.value,
+                    })
+                  }
+                  className="w-full h-12 rounded-2xl border border-slate-200 px-4 outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+
+              <div className="md:col-span-2 pt-4">
+                <button
+                  type="submit"
+                  className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black tracking-wide"
+                >
+                  SAVE ENTRY
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

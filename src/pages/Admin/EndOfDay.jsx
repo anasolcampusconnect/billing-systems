@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Search, Plus, MoreVertical, X, FileText, Printer, CheckCircle, AlertTriangle } from 'lucide-react';
+import { 
+  Moon, Search, Plus, MoreVertical, X, FileText, Printer, 
+  CheckCircle2, AlertTriangle, Filter, Download, 
+  TrendingUp, Wallet, Banknote, Calendar, CheckCircle
+} from 'lucide-react';
 
 const EndOfDay = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,262 +19,215 @@ const EndOfDay = () => {
     { id: 'EOD-0511', date: '11 May 2026', totalSales: 112000, expectedCash: 38000, actualCash: 38000, diff: 0, status: 'Settled', manager: 'Admin' },
   ]);
 
-  // 2. Form State for "Run EOD" Modal
-  const [formData, setFormData] = useState({
-    actualCash: '',
-    notes: ''
-  });
+  const [formData, setFormData] = useState({ actualCash: '', notes: '' });
 
-  // System generated (Dummy) expected values for today
+  // Dummy expected values
   const todayExpectedSales = 85400;
   const todayExpectedCash = 24500;
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // 2. Logic
+  const filteredData = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return eodData.filter(item => 
+      item.date.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
+    );
+  }, [eodData, searchTerm]);
 
-  // 3. Handle EOD Submit
-  const handleAddSubmit = (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
-    
-    const actualCashVal = parseFloat(formData.actualCash) || 0;
-    const difference = actualCashVal - todayExpectedCash;
-    
+    const actualVal = parseFloat(formData.actualCash) || 0;
+    const difference = actualVal - todayExpectedCash;
     let newStatus = 'Settled';
     if (difference < 0) newStatus = 'Shortage';
     if (difference > 0) newStatus = 'Overage';
 
     const newDate = new Date();
-    const newId = `EOD-${String(newDate.getMonth() + 1).padStart(2, '0')}${String(newDate.getDate()).padStart(2, '0')}`;
-
     const newEOD = {
-      id: newId,
+      id: `EOD-${String(newDate.getMonth()+1).padStart(2,'0')}${String(newDate.getDate()).padStart(2,'0')}`,
       date: newDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       totalSales: todayExpectedSales,
       expectedCash: todayExpectedCash,
-      actualCash: actualCashVal,
+      actualCash: actualVal,
       diff: difference,
       status: newStatus,
-      manager: 'Active Staff' // From current logged in user
+      manager: 'Active Staff'
     };
-
     setEodData([newEOD, ...eodData]);
     setShowAddModal(false);
     setFormData({ actualCash: '', notes: '' });
   };
 
-  const filteredData = eodData.filter(item => 
-    item.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
-    <div className="space-y-6 relative" onClick={() => activeDropdown && setActiveDropdown(null)}>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        
-        {/* Top Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-emerald-600/20 p-3 rounded-lg border border-emerald-500/30">
-              <Moon className="text-emerald-500" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">End of Day (EOD)</h2>
-              <p className="text-sm text-gray-500">Daily register closures and cash settlements</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-              <input
-                type="text"
-                placeholder="Search by date or ID..."
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-emerald-500 text-white text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm whitespace-nowrap shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-            >
-              <CheckCircle size={18} /> Run Today's EOD
-            </button>
-          </div>
+    <div className="space-y-6 font-plus-jakarta" onClick={() => setActiveDropdown(null)}>
+      
+      {/* 1. DAILY SETTLEMENT SUMMARY */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
+           <div>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Expected In-Drawer</p>
+              <h3 className="text-2xl font-black text-slate-800 font-mono mt-1">₹{todayExpectedCash.toLocaleString()}</h3>
+           </div>
+           <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100"><Banknote size={20}/></div>
         </div>
+        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
+           <div>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Gross Sales (Today)</p>
+              <h4 className="text-2xl font-black text-slate-800 font-mono mt-1">₹{todayExpectedSales.toLocaleString()}</h4>
+           </div>
+           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100"><TrendingUp size={20}/></div>
+        </div>
+        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
+           <div>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Pending Settlements</p>
+              <h4 className="text-2xl font-black text-amber-600 mt-1">01 <span className="text-xs font-bold uppercase tracking-normal">Terminal</span></h4>
+           </div>
+           <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100"><Moon size={20}/></div>
+        </div>
+      </div>
 
-        {/* Data Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-visible shadow-lg">
-          <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#121212] border-b border-gray-800 text-emerald-500/70 uppercase text-xs font-bold tracking-wider">
-                <tr>
-                  <th className="p-4">Report ID</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4">Gross Sales</th>
-                  <th className="p-4">Expected Cash</th>
-                  <th className="p-4">Actual Drawer</th>
-                  <th className="p-4">Discrepancy</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 font-mono text-gray-400">{item.id}</td>
-                    <td className="p-4 text-gray-200 font-bold">{item.date}</td>
-                    <td className="p-4 font-mono text-gray-300">₹{item.totalSales.toLocaleString('en-IN')}</td>
-                    <td className="p-4 font-mono text-gray-400">₹{item.expectedCash.toLocaleString('en-IN')}</td>
-                    <td className="p-4 font-mono text-white font-bold">₹{item.actualCash.toLocaleString('en-IN')}</td>
-                    <td className="p-4 font-mono font-bold">
-                      {item.diff === 0 ? (
-                        <span className="text-gray-500">₹0</span>
-                      ) : item.diff > 0 ? (
-                        <span className="text-yellow-400">+₹{Math.abs(item.diff)}</span>
-                      ) : (
-                        <span className="text-red-400">-₹{Math.abs(item.diff)}</span>
-                      )}
+      {/* 2. COMMAND TOOLBAR */}
+      <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="relative group min-w-[350px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+               type="text" 
+               placeholder="Search by Report ID or Date..." 
+               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/20" 
+               value={searchTerm} 
+               onChange={(e)=>setSearchTerm(e.target.value)} 
+            />
+          </div>
+          <button className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 transition-all"><Calendar size={18}/></button>
+          <button className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 transition-all"><Download size={18}/></button>
+        </div>
+        <button onClick={() => setShowAddModal(true)} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black px-8 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 transition-all text-xs tracking-widest">
+          <CheckCircle2 size={18} strokeWidth={3}/> RUN TODAY'S EOD
+        </button>
+      </div>
+
+      {/* 3. SETTLEMENT REGISTRY */}
+      <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
+         <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-slate-50 text-slate-400 font-bold uppercase tracking-[0.15em] border-b border-slate-100">
+               <tr>
+                  <th className="p-5 pl-10">Report Identity</th>
+                  <th className="p-5 text-right">Gross Sales</th>
+                  <th className="p-5 text-right">Actual Drawer</th>
+                  <th className="p-5 text-right">Discrepancy</th>
+                  <th className="p-5 text-center">Settlement</th>
+                  <th className="p-5 pr-10"></th>
+               </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+               {filteredData.map(item => (
+                 <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="p-5 pl-10">
+                       <div>
+                          <p className="text-sm font-black text-slate-800">{item.date}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 tracking-tighter">{item.id} • Managed by {item.manager}</p>
+                       </div>
                     </td>
-                    <td className="p-4">
-                      <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider w-fit border ${
-                        item.status === 'Settled' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        item.status === 'Shortage' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                        'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                    <td className="p-5 text-right font-black text-slate-400 text-sm font-mono">₹{item.totalSales.toLocaleString()}</td>
+                    <td className="p-5 text-right font-black text-slate-700 text-sm font-mono">₹{item.actualCash.toLocaleString()}</td>
+                    <td className="p-5 text-right font-black text-sm">
+                       {item.diff === 0 ? (
+                          <span className="text-slate-400 font-mono">₹0</span>
+                       ) : item.diff > 0 ? (
+                          <span className="text-amber-500 font-mono">+₹{Math.abs(item.diff)}</span>
+                       ) : (
+                          <span className="text-rose-500 font-mono">-₹{Math.abs(item.diff)}</span>
+                       )}
+                    </td>
+                    <td className="p-5 text-center">
+                       <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase inline-flex items-center gap-1.5 border ${
+                        item.status === 'Settled' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        item.status === 'Shortage' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                        'bg-amber-50 text-amber-600 border-amber-100'
                       }`}>
-                        {item.status === 'Settled' ? <CheckCircle size={12}/> : <AlertTriangle size={12}/>}
+                        {item.status === 'Settled' ? <CheckCircle size={10}/> : <AlertTriangle size={10}/>}
                         {item.status}
                       </span>
                     </td>
-                    <td className="p-4 text-center relative">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === item.id ? null : item.id); }} 
-                        className="text-gray-500 hover:text-emerald-500 transition-colors p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
+                    <td className="p-5 pr-10 text-right relative">
+                       <button 
+                         onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === item.id ? null : item.id); }}
+                         className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
+                       >
+                          <MoreVertical size={16}/>
+                       </button>
 
-                      {/* Dropdown Menu */}
-                      <AnimatePresence>
-                        {activeDropdown === item.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-10 top-4 w-40 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <FileText size={14} /> View Full Report
-                            </button>
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Printer size={14} /> Print Z-Report
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                       <AnimatePresence>
+                         {activeDropdown === item.id && (
+                           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="absolute right-10 top-12 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden text-left" onClick={(e)=>e.stopPropagation()}>
+                              <button className="w-full px-4 py-2.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"><FileText size={14}/> Full Audit</button>
+                              <button className="w-full px-4 py-2.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"><Printer size={14}/> Z-Report</button>
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
                     </td>
-                  </tr>
-                ))}
-                {filteredData.length === 0 && (
-                  <tr>
-                    <td colSpan="8" className="p-8 text-center text-gray-500">
-                      No EOD statements found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </motion.div>
+                 </tr>
+               ))}
+            </tbody>
+         </table>
+         {filteredData.length === 0 && (
+            <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No Settlement Records Found</div>
+         )}
+      </div>
 
-      {/* Run EOD Settle Modal */}
+      {/* 4. RUN EOD MODAL */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} 
-              className="relative bg-[#1a1a1a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden z-[110]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Moon size={20} className="text-emerald-500"/> Settle Register (EOD)
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white border border-slate-200 rounded-[40px] shadow-2xl w-full max-w-md p-10 z-[110]">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Shift Settlement</h3>
+                <button onClick={() => setShowAddModal(false)} className="bg-slate-50 p-3 rounded-full text-slate-400 hover:text-slate-800"><X size={20} /></button>
               </div>
-
-              <form onSubmit={handleAddSubmit} className="p-5 space-y-5">
-                {/* System Expected Values */}
-                <div className="bg-[#121212] p-4 rounded-lg border border-gray-800 flex justify-between items-center">
+              
+              <form onSubmit={handleSave} className="space-y-6">
+                <div className="bg-slate-50 border border-slate-200 p-5 rounded-3xl flex justify-between items-center shadow-inner">
                    <div>
-                      <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">System Cash Expected</p>
-                      <p className="text-xl text-emerald-500 font-mono font-bold">₹{todayExpectedCash.toLocaleString('en-IN')}</p>
+                      <p className="text-[10px] uppercase text-slate-400 font-black tracking-widest mb-1">System Expected</p>
+                      <p className="text-2xl text-emerald-600 font-black font-mono">₹{todayExpectedCash.toLocaleString()}</p>
                    </div>
                    <div className="text-right">
-                      <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">Total Gross Sales</p>
-                      <p className="text-sm text-gray-300 font-mono">₹{todayExpectedSales.toLocaleString('en-IN')}</p>
+                      <p className="text-[10px] uppercase text-slate-400 font-black tracking-widest mb-1">Total Sales</p>
+                      <p className="text-sm text-slate-500 font-black font-mono">₹{todayExpectedSales.toLocaleString()}</p>
                    </div>
                 </div>
 
-                {/* Actual Input */}
-                <div>
-                  <label className="block text-xs font-bold text-emerald-500 uppercase tracking-wide mb-1.5">Actual Cash in Drawer (₹)</label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-2">Actual Counted Cash (₹)</label>
                   <input 
-                    type="number" 
-                    name="actualCash" 
-                    required 
-                    min="0" 
+                    type="number" required min="0" placeholder="Enter Cash in Drawer"
+                    className="w-full bg-slate-50 border-2 border-emerald-100 rounded-2xl p-4 text-slate-800 outline-none focus:border-emerald-500 font-black text-xl shadow-inner" 
                     value={formData.actualCash} 
-                    onChange={handleInputChange} 
-                    className="w-full bg-[#121212] border-2 border-emerald-500/50 rounded-lg p-3 text-white focus:border-emerald-500 outline-none font-mono text-lg" 
-                    placeholder="Enter counted cash amount..." 
+                    onChange={(e)=>setFormData({...formData, actualCash: e.target.value})} 
                   />
                   
-                  {/* Live Difference Calculator */}
                   {formData.actualCash && (
-                     <div className="mt-2 text-xs font-bold">
+                     <div className="mt-3 px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-bold">
                         {parseFloat(formData.actualCash) - todayExpectedCash === 0 ? (
-                           <span className="text-emerald-400">Perfect Match! Cash is balanced.</span>
+                           <span className="text-emerald-600 uppercase flex items-center gap-1"><CheckCircle2 size={12}/> Cash is perfectly balanced</span>
                         ) : parseFloat(formData.actualCash) - todayExpectedCash < 0 ? (
-                           <span className="text-red-400">Shortage of ₹{Math.abs(parseFloat(formData.actualCash) - todayExpectedCash)} detected.</span>
+                           <span className="text-rose-600 uppercase flex items-center gap-1"><AlertTriangle size={12}/> Shortage detected: ₹{Math.abs(parseFloat(formData.actualCash) - todayExpectedCash)}</span>
                         ) : (
-                           <span className="text-yellow-400">Overage of ₹{Math.abs(parseFloat(formData.actualCash) - todayExpectedCash)} detected.</span>
+                           <span className="text-amber-600 uppercase flex items-center gap-1"><AlertTriangle size={12}/> Overage detected: ₹{Math.abs(parseFloat(formData.actualCash) - todayExpectedCash)}</span>
                         )}
                      </div>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Closing Notes / Remarks</label>
-                  <textarea 
-                    name="notes" 
-                    value={formData.notes} 
-                    onChange={handleInputChange} 
-                    className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-emerald-500 outline-none min-h-[60px] resize-none" 
-                    placeholder="Optional details..." 
-                  />
-                </div>
-
-                <div className="pt-2 flex gap-3">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-colors">Cancel</button>
-                  <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]">Confirm Settlement</button>
-                </div>
+                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-5 rounded-[24px] shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2 mt-4 transition-all">
+                   <CheckCircle2 size={18}/> CONFIRM SETTLEMENT
+                </button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
     </div>
   );
 };

@@ -1,237 +1,310 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Layers, Search, Plus, MoreVertical, X, Edit, Eye, Trash2 } from 'lucide-react';
-
+import React, { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion"; // <--- Dheenini add cheyandi
+import {
+  Search, Plus, MoreVertical, Package2, Store, CalendarRange,
+  CheckCircle2, XCircle, Eye, Edit, Trash2, Layers3,
+  Filter, Download, Sparkles, X, ChevronDown
+} from "lucide-react";
 const Assortments = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  
-  // New State for handling the Actions Dropdown
-  const [activeDropdown, setActiveDropdown] = useState(null);
-
-  // 1. Static Data for Assortments/Bundles
-  const [assortmentsData, setAssortmentsData] = useState([
-    { id: 'AST-001', name: 'Premium Diwali Hamper', itemsCount: 12, basePrice: '₹3,500', discount: '15%', status: 'Active' },
-    { id: 'AST-002', name: 'Monthly Grocery Kit - Family', itemsCount: 45, basePrice: '₹6,200', discount: '10%', status: 'Active' },
-    { id: 'AST-003', name: 'Summer Drinks Bundle', itemsCount: 6, basePrice: '₹850', discount: '5%', status: 'Draft' },
-    { id: 'AST-004', name: 'Work From Home Tech Kit', itemsCount: 4, basePrice: '₹4,999', discount: '0%', status: 'Inactive' },
-  ]);
+  // --- 1. STATE MANAGEMENT ---
+  const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [editingItem, setEditingItem] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '', itemsCount: '', basePrice: '', discount: ''
+    assortmentName: "", store: "", category: "", products: "",
+    startDate: "", endDate: "", status: "Active",
   });
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const [assortments, setAssortments] = useState([
+    { id: "AST-1001", assortmentName: "Summer Grocery Combo", store: "Hyderabad Central", category: "Grocery", products: 120, startDate: "2026-05-01", endDate: "2026-05-31", status: "Active" },
+    { id: "AST-1002", assortmentName: "Festival Electronics", store: "Bangalore Mall", category: "Electronics", products: 65, startDate: "2026-05-10", endDate: "2026-06-10", status: "Scheduled" },
+    { id: "AST-1003", assortmentName: "Dairy Essentials", store: "Store 12", category: "Dairy", products: 40, startDate: "2026-04-05", endDate: "2026-04-30", status: "Expired" },
+  ]);
+
+  // --- 2. CORE LOGIC (SEARCH & FILTER) ---
+  const filteredData = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return assortments.filter((item) => {
+      const matchesSearch = 
+        item.assortmentName.toLowerCase().includes(q) ||
+        item.store.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q);
+      
+      const matchesStatus = statusFilter === "All" || item.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [search, assortments, statusFilter]);
+
+  // --- 3. EXPORT FUNCTIONALITY ---
+  const handleExport = () => {
+    if (filteredData.length === 0) return alert("No data to export!");
+
+    const headers = ["ID", "Assortment Name", "Store", "Category", "Products", "Start Date", "End Date", "Status"];
+    const rows = filteredData.map(a => [a.id, a.assortmentName, a.store, a.category, a.products, a.startDate, a.endDate, a.status]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n" 
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Assortments_Report_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const handleAddSubmit = (e) => {
+  // --- 4. CRUD HANDLERS ---
+  const handleSave = (e) => {
     e.preventDefault();
-    const newId = `AST-00${assortmentsData.length + 1}`;
-    const newAssortment = {
-      id: newId,
-      name: formData.name,
-      itemsCount: parseInt(formData.itemsCount) || 0,
-      basePrice: `₹${formData.basePrice}`,
-      discount: formData.discount ? `${formData.discount}%` : '0%',
-      status: 'Active'
-    };
-
-    setAssortmentsData([newAssortment, ...assortmentsData]);
-    setShowAddModal(false);
-    setFormData({ name: '', itemsCount: '', basePrice: '', discount: '' });
+    if (editingItem) {
+      setAssortments(assortments.map(a => a.id === editingItem.id ? { ...formData, id: a.id, products: Number(formData.products) } : a));
+    } else {
+      const newData = {
+        ...formData,
+        id: `AST-${1000 + assortments.length + 1}`,
+        products: Number(formData.products),
+      };
+      setAssortments([newData, ...assortments]);
+    }
+    closeModal();
   };
 
-  // --- NEW: Delete Function ---
   const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this assortment?");
-    if (confirmDelete) {
-      setAssortmentsData(assortmentsData.filter(item => item.id !== id));
-      setActiveDropdown(null); // Close dropdown after delete
+    if (window.confirm("Are you sure you want to delete this assortment?")) {
+      setAssortments(assortments.filter(a => a.id !== id));
+      setActiveMenu(null);
     }
   };
 
-  const filteredData = assortmentsData.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const openModal = (item = null) => {
+    if (item) {
+      setEditingItem(item);
+      setFormData({ ...item });
+    } else {
+      setEditingItem(null);
+      setFormData({ assortmentName: "", store: "", category: "", products: "", startDate: "", endDate: "", status: "Active" });
+    }
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingItem(null);
+  };
 
   return (
-    <div className="space-y-6 relative" onClick={() => activeDropdown && setActiveDropdown(null)}>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        
-        {/* Top Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-teal-600/20 p-3 rounded-lg border border-teal-500/30">
-              <Layers className="text-teal-500" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Product Assortments</h2>
-              <p className="text-sm text-gray-500">Manage product bundles and collections</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-              <input
-                type="text"
-                placeholder="Search assortments..."
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-teal-500 text-white text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-teal-600 hover:bg-teal-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm whitespace-nowrap"
-            >
-              <Plus size={18} /> Add Assortment
-            </button>
-          </div>
+    <div className="p-6 bg-[#f8fafc] min-h-screen space-y-8 font-plus-jakarta" onClick={() => setActiveMenu(null)}>
+      
+      {/* HEADER */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+        <div>
+          <h1 className="text-4xl font-black text-slate-800 tracking-tight">Assortments</h1>
+          <p className="text-slate-500 font-semibold mt-2">Manage seasonal product bundles and category allocations</p>
         </div>
+        <button onClick={() => openModal()} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95 text-sm uppercase tracking-widest">
+          <Plus size={20} strokeWidth={3} /> CREATE ASSORTMENT
+        </button>
+      </div>
 
-        {/* Data Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-visible shadow-lg">
-          <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#121212] border-b border-gray-800 text-gray-400 uppercase text-xs font-bold tracking-wider">
-                <tr>
-                  <th className="p-4">Assortment ID</th>
-                  <th className="p-4">Collection Name</th>
-                  <th className="p-4">Total Items</th>
-                  <th className="p-4">Base Price</th>
-                  <th className="p-4">Discount Applied</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredData.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 font-mono text-teal-400 font-medium">{item.id}</td>
-                    <td className="p-4 text-gray-200 font-bold">{item.name}</td>
-                    <td className="p-4 text-gray-300">{item.itemsCount} Products</td>
-                    <td className="p-4 text-gray-200 font-mono">{item.basePrice}</td>
-                    <td className="p-4 text-green-400 font-bold">{item.discount}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        item.status === 'Active' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                        item.status === 'Draft' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-                        'bg-red-500/10 text-red-500 border border-red-500/20'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center relative">
-                      
-                      {/* --- ACTION BUTTON --- */}
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevents the parent div from closing it immediately
-                          setActiveDropdown(activeDropdown === item.id ? null : item.id);
-                        }} 
-                        className="text-gray-500 hover:text-teal-500 transition-colors p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-
-                      {/* --- ACTION DROPDOWN MENU --- */}
-                      <AnimatePresence>
-                        {activeDropdown === item.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-10 top-4 w-36 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden"
-                            onClick={(e) => e.stopPropagation()} // Click inside menu shouldn't close it
-                          >
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Eye size={14} /> View Details
-                            </button>
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Edit size={14} /> Edit Bundle
-                            </button>
-                            <div className="border-t border-gray-800 my-1"></div>
-                            <button 
-                              onClick={() => handleDelete(item.id)}
-                              className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                    </td>
-                  </tr>
-                ))}
-                {filteredData.length === 0 && (
-                  <tr>
-                    <td colSpan="7" className="p-8 text-center text-gray-500">
-                      No assortments found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {/* ANALYTICS STRIP */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {[
+          { label: "Total Managed", val: "248", icon: Layers3, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Active Nodes", val: "82", icon: Sparkles, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Assigned Stores", val: "35", icon: Store, color: "text-orange-600", bg: "bg-orange-50" },
+          { label: "Coverage", val: "14.8K", icon: Package2, color: "text-blue-600", bg: "bg-blue-50" },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-400 uppercase text-[10px] font-black tracking-[0.2em]">{stat.label}</p>
+                <h2 className={`text-3xl font-black mt-2 ${stat.color}`}>{stat.val}</h2>
+              </div>
+              <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center shadow-inner`}>
+                <stat.icon size={26} />
+              </div>
+            </div>
           </div>
-        </div>
-      </motion.div>
+        ))}
+      </div>
 
-      {/* Add Assortment Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
+      {/* COMMAND TOOLBAR */}
+      <div className="bg-white border border-slate-200 rounded-[32px] p-3 flex flex-col xl:flex-row gap-4 xl:items-center xl:justify-between shadow-sm sticky top-2 z-30">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          <div className="relative group flex-1 max-w-md">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search assortment, category or store identity..."
+              className="bg-slate-50 border border-slate-200 rounded-2xl h-12 pl-12 pr-4 w-full outline-none focus:ring-2 focus:ring-indigo-100 font-medium text-sm text-slate-700"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} 
-              className="relative bg-[#1a1a1a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden z-[110]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus size={20} className="text-teal-500"/> Create Assortment
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
+          </div>
+
+          <div className="relative">
+             <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+             <select 
+               className="h-12 pl-10 pr-10 rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-widest appearance-none outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+               value={statusFilter}
+               onChange={(e) => setStatusFilter(e.target.value)}
+             >
+                <option value="All">Life-cycle: ALL</option>
+                <option value="Active">Active</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Expired">Expired</option>
+             </select>
+             <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
+
+          <button 
+            onClick={handleExport}
+            className="h-12 px-6 rounded-2xl border border-slate-200 bg-slate-50 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 transition-all active:scale-95"
+          >
+            <Download size={16} /> EXPORT MANIFEST
+          </button>
+        </div>
+      </div>
+
+      {/* REGISTRY TABLE */}
+      <div className="bg-white border border-slate-200 rounded-[40px] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr className="text-slate-400 uppercase text-[10px] font-black tracking-[0.2em]">
+                <th className="p-6 pl-10">Assortment Identity</th>
+                <th className="p-6">Origin Store</th>
+                <th className="p-6">Classification</th>
+                <th className="p-6 text-center">Unit Count</th>
+                <th className="p-6">Operation Timeline</th>
+                <th className="p-6">Status</th>
+                <th className="p-6 pr-10"></th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100">
+              {filteredData.map((item) => (
+                <tr key={item.id} className="group hover:bg-slate-50 transition-all cursor-default">
+                  <td className="p-6 pl-10">
+                    <div>
+                      <h3 className="font-black text-slate-800 text-sm group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{item.assortmentName}</h3>
+                      <p className="text-slate-400 text-[10px] font-bold mt-1 font-mono">{item.id}</p>
+                    </div>
+                  </td>
+                  <td className="p-6 text-slate-600 font-bold text-xs">{item.store}</td>
+                  <td className="p-6">
+                    <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider border border-indigo-100">
+                      {item.category}
+                    </span>
+                  </td>
+                  <td className="p-6 text-center font-black text-slate-700 text-sm">{item.products} <span className="text-[10px] text-slate-400 font-normal ml-0.5">SKUs</span></td>
+                  <td className="p-6 text-slate-500 text-xs font-bold font-mono">
+                    <div className="flex items-center gap-2">
+                      <CalendarRange size={14} className="text-slate-400" />
+                      {item.startDate} / {item.endDate}
+                    </div>
+                  </td>
+                  <td className="p-6">
+                    <span className={`flex items-center gap-2 font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-lg border w-fit ${
+                      item.status === "Active" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                      item.status === "Scheduled" ? "bg-orange-50 text-orange-600 border-orange-100" :
+                      "bg-rose-50 text-rose-600 border-rose-100"
+                    }`}>
+                      {item.status === "Active" ? <CheckCircle2 size={12} /> : item.status === "Scheduled" ? <CalendarRange size={12} /> : <XCircle size={12} />}
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="p-6 pr-10 relative">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === item.id ? null : item.id); }}
+                      className={`p-2 rounded-xl transition-all ${activeMenu === item.id ? 'bg-slate-800 text-white shadow-lg' : 'hover:bg-slate-200 text-slate-400 hover:text-slate-600'}`}
+                    >
+                      <MoreVertical size={20} />
+                    </button>
+
+                    <AnimatePresence>
+                      {activeMenu === item.id && (
+                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-12 top-14 bg-white border border-slate-200 rounded-2xl shadow-2xl w-48 overflow-hidden z-[50] py-1">
+                          <button className="w-full px-4 py-3 hover:bg-slate-50 flex items-center gap-3 text-xs font-bold text-slate-600 transition-colors"><Eye size={14} /> Audit Details</button>
+                          <button onClick={() => openModal(item)} className="w-full px-4 py-3 hover:bg-slate-50 flex items-center gap-3 text-xs font-bold text-slate-600 transition-colors"><Edit size={14} /> Update Config</button>
+                          <div className="border-t border-slate-100 my-1" />
+                          <button onClick={() => handleDelete(item.id)} className="w-full px-4 py-3 hover:bg-rose-50 flex items-center gap-3 text-xs font-bold text-rose-600 transition-colors"><Trash2 size={14} /> Purge Record</button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {filteredData.length === 0 && (
+          <div className="p-20 text-center text-slate-400 font-black uppercase tracking-[0.3em] text-xs">No Matching Architectures Found</div>
+        )}
+      </div>
+
+      {/* CONFIGURATION MODAL */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[1000] p-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} className="bg-white w-full max-w-2xl rounded-[48px] p-10 border border-slate-200 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center justify-between mb-10">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">{editingItem ? 'Edit Profile' : 'Init Assortment'}</h2>
+                  <p className="text-slate-500 font-bold text-sm mt-1">Configure product allocations and store lifecycle</p>
+                </div>
+                <button onClick={closeModal} className="w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-800 transition-all flex items-center justify-center"><X size={24} /></button>
               </div>
 
-              <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Collection Name</label>
-                  <input type="text" name="name" required value={formData.name} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none" placeholder="e.g. Winter Essentials" />
+              <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Portfolio Identity</label>
+                  <input required type="text" placeholder="e.g. Winter Staples 2026" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-black text-slate-700" value={formData.assortmentName} onChange={(e) => setFormData({ ...formData, assortmentName: e.target.value })} />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Number of Items</label>
-                  <input type="number" name="itemsCount" required min="1" value={formData.itemsCount} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none" placeholder="e.g. 5" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Target Node (Store)</label>
+                  <input required type="text" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700" value={formData.store} onChange={(e) => setFormData({ ...formData, store: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Base Price (₹)</label>
-                    <input type="number" name="basePrice" required min="0" value={formData.basePrice} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none font-mono" placeholder="0.00" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Discount (%)</label>
-                    <input type="number" name="discount" min="0" max="100" value={formData.discount} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-teal-500 outline-none font-mono" placeholder="0" />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Industry Class</label>
+                  <input required type="text" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
                 </div>
-                <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition-colors">Cancel</button>
-                  <button type="submit" className="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2.5 rounded-lg transition-colors">Save Collection</button>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Product Volume</label>
+                  <input required type="number" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-black text-slate-700" value={formData.products} onChange={(e) => setFormData({ ...formData, products: e.target.value })} />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Lifecycle Phase</label>
+                  <select className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-black text-slate-700 appearance-none" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                    <option value="Active">ACTIVE</option>
+                    <option value="Scheduled">SCHEDULED</option>
+                    <option value="Expired">EXPIRED</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Start Sync</label>
+                  <input required type="date" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 uppercase" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Termination Date</label>
+                  <input required type="date" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 uppercase" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
+                </div>
+                <button type="submit" className="md:col-span-2 w-full h-16 rounded-[24px] bg-indigo-600 hover:bg-indigo-700 text-white font-black tracking-widest uppercase transition-all shadow-xl shadow-indigo-100 mt-4 flex items-center justify-center gap-3">
+                  <CheckCircle2 size={22} /> {editingItem ? 'Update Configuration' : 'Deploy Architecture'}
+                </button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
     </div>
   );
 };

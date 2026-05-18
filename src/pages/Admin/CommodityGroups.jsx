@@ -1,242 +1,213 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Boxes, Search, Plus, MoreVertical, X, Edit, Eye, Trash2 } from 'lucide-react';
+import { 
+  Search, Plus, Edit3, Trash2, X, ChevronRight, CheckCircle2, 
+  Layers3, Package2, Eye, ArrowUpRight, TrendingUp, TrendingDown,
+  Download, Activity, CircleDollarSign, Boxes, Filter, LayoutGrid, Calendar
+} from 'lucide-react';
 
 const CommodityGroups = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
+  const navigate = useNavigate();
 
-  // 1. Static Data for Commodity Groups (Categories)
-  const [groupsData, setGroupsData] = useState([
-    { id: 'GRP-001', name: 'Grocery & Staples', description: 'Daily essential food items and cooking needs', productCount: 145, status: 'Active' },
-    { id: 'GRP-002', name: 'Electronics', description: 'Gadgets, home appliances, and accessories', productCount: 32, status: 'Active' },
-    { id: 'GRP-003', name: 'Clothing & Apparel', description: 'Men, Women, and Kids fashion wear', productCount: 89, status: 'Active' },
-    { id: 'GRP-004', name: 'Dry Fruits & Nuts', description: 'Premium quality imported dry fruits', productCount: 12, status: 'Inactive' },
+  // --- 1. STATE MANAGEMENT ---
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+
+  // Data Logic
+  const [groups, setGroups] = useState([
+    { id: "CG-1001", name: "Beverages", subtitle: "Soft drinks & packaged juices", products: 148, sales: 840000, stock: 1842, growth: 18.4, status: "Excellent" },
+    { id: "CG-1002", name: "Frozen Foods", subtitle: "Ready-to-cook gourmet items", products: 62, sales: 310000, stock: 284, growth: -3.8, status: "Low Stock" },
+    { id: "CG-1003", name: "Household", subtitle: "Daily cleaning & home essentials", products: 124, sales: 570000, stock: 942, growth: 12.2, status: "Growing" },
+    { id: "CG-1004", name: "Personal Care", subtitle: "Premium beauty & hygiene", products: 96, sales: 490000, stock: 624, growth: 9.7, status: "Stable" },
   ]);
 
-  // 2. Form State for New Group
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    status: 'Active'
-  });
+  const [formData, setFormData] = useState({ name: '', subtitle: '', products: '', status: 'Stable' });
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // --- 2. CORE LOGIC ---
+  const filteredData = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return groups.filter(g => g.name.toLowerCase().includes(q) || g.id.toLowerCase().includes(q));
+  }, [groups, searchTerm]);
+
+  const handleExport = () => {
+    const headers = ["ID", "Name", "Products", "Sales", "Stock", "Growth"];
+    const rows = filteredData.map(g => [g.id, g.name, g.products, g.sales, g.stock, `${g.growth}%`]);
+    let csv = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csv));
+    link.setAttribute("download", `Commodity_Audit_Registry.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  // 3. Handle Form Submit
-  const handleAddSubmit = (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
-    
-    const newId = `GRP-00${groupsData.length + 1}`;
-
-    const newGroup = {
-      id: newId,
-      name: formData.name,
-      description: formData.description,
-      productCount: 0, // Brand new group will have 0 products initially
-      status: formData.status
-    };
-
-    setGroupsData([newGroup, ...groupsData]);
-    setShowAddModal(false);
-    setFormData({ name: '', description: '', status: 'Active' });
-  };
-
-  // Delete Function
-  const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this Category? Products inside might be unassigned.");
-    if (confirmDelete) {
-      setGroupsData(groupsData.filter(item => item.id !== id));
-      setActiveDropdown(null);
+    if (editingItem) {
+      setGroups(groups.map(g => g.id === editingItem.id ? { ...g, ...formData, products: Number(formData.products) } : g));
+    } else {
+      const newGroup = { ...formData, id: `CG-${1000 + groups.length + 1}`, products: Number(formData.products), sales: 0, stock: 0, growth: 0 };
+      setGroups([newGroup, ...groups]);
     }
+    setShowModal(false);
   };
 
-  const filteredData = groupsData.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure you want to delete this group?")) setGroups(groups.filter(g => g.id !== id));
+  };
 
   return (
-    <div className="space-y-6 relative" onClick={() => activeDropdown && setActiveDropdown(null)}>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <div className="space-y-8 font-plus-jakarta pb-20">
+      
+      {/* 1. PREMIUM HEADER */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div>
+           <div className="flex items-center gap-2 mb-1">
+              <span className="h-1.5 w-6 bg-indigo-600 rounded-full"></span>
+              <span className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Enterprise Admin Console</span>
+           </div>
+           <h1 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">Commodity Hub</h1>
+        </div>
         
-        {/* Top Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-600/20 p-3 rounded-lg border border-indigo-500/30">
-              <Boxes className="text-indigo-500" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Commodity Groups</h2>
-              <p className="text-sm text-gray-500">Manage main product categories and families</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-              <input
-                type="text"
-                placeholder="Search categories..."
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-indigo-500 text-white text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+        <div className="flex items-center gap-3">
+           <div className="relative group hidden md:block">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                type="text" placeholder="Find Group ID or Name..." 
+                className="bg-white border border-slate-200 rounded-2xl h-12 pl-12 pr-4 w-[280px] text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm"
+                value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)}
               />
-            </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm whitespace-nowrap shadow-[0_0_15px_rgba(79,70,229,0.3)]"
-            >
-              <Plus size={18} /> Add Category
-            </button>
-          </div>
+           </div>
+           <button onClick={handleExport} className="p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-slate-500 transition-all active:scale-95 shadow-sm"><Download size={20}/></button>
+           <button onClick={() => { setEditingItem(null); setFormData({name:'', subtitle:'', products:'', status:'Stable'}); setShowModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 h-12 rounded-2xl font-black flex items-center gap-2 shadow-lg shadow-indigo-100 transition-all active:scale-95 text-xs uppercase tracking-widest">
+             <Plus size={18} strokeWidth={3}/> New Group
+           </button>
         </div>
+      </div>
 
-        {/* Data Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-visible shadow-lg">
-          <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#121212] border-b border-gray-800 text-gray-400 uppercase text-xs font-bold tracking-wider">
-                <tr>
-                  <th className="p-4 w-32">Group ID</th>
-                  <th className="p-4 w-48">Category Name</th>
-                  <th className="p-4">Description</th>
-                  <th className="p-4 text-center">Total Products</th>
-                  <th className="p-4 w-24">Status</th>
-                  <th className="p-4 text-center w-24">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 font-mono text-indigo-400 font-medium">{item.id}</td>
-                    <td className="p-4 text-gray-200 font-bold">{item.name}</td>
-                    <td className="p-4 text-gray-400 truncate max-w-[250px]">{item.description}</td>
-                    <td className="p-4 text-center">
-                      <span className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-bold border border-gray-700">
-                        {item.productCount} Items
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        item.status === 'Active' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                        'bg-red-500/10 text-red-500 border border-red-500/20'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center relative">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === item.id ? null : item.id); }} 
-                        className="text-gray-500 hover:text-indigo-500 transition-colors p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      <AnimatePresence>
-                        {activeDropdown === item.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-10 top-4 w-36 bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Eye size={14} /> View Products
-                            </button>
-                            <button className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2 transition-colors">
-                              <Edit size={14} /> Edit Category
-                            </button>
-                            <div className="border-t border-gray-800 my-1"></div>
-                            <button 
-                              onClick={() => handleDelete(item.id)}
-                              className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </td>
-                  </tr>
-                ))}
-                {filteredData.length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="p-8 text-center text-gray-500">
-                      No commodity groups found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {/* 2. KPIs WITH SOFT DESIGN */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {[
+          { label: "Managed Nodes", val: groups.length, icon: Layers3, color: "text-indigo-600", bg: "bg-indigo-50", trend: "+12%" },
+          { label: "Global Coverage", val: "2,840", icon: Boxes, color: "text-blue-600", bg: "bg-blue-50", trend: "+8.4%" },
+          { label: "Yield Performance", val: "₹28.4L", icon: CircleDollarSign, color: "text-emerald-600", bg: "bg-emerald-50", trend: "+18%" },
+          { label: "Health Index", val: "92%", icon: Activity, color: "text-orange-600", bg: "bg-orange-50", trend: "-1.2%" },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white border border-slate-200 p-6 rounded-[28px] shadow-sm hover:shadow-md transition-all group">
+             <div className="flex justify-between items-start mb-4">
+                <div className={`w-11 h-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center shadow-inner`}><stat.icon size={20}/></div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${stat.trend.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{stat.trend}</span>
+             </div>
+             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{stat.label}</p>
+             <h3 className="text-2xl font-black text-slate-800 mt-1">{stat.val}</h3>
           </div>
-        </div>
-      </motion.div>
+        ))}
+      </div>
 
-      {/* Add Category Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* 3. REFINED GRID CARDS */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <AnimatePresence mode='popLayout'>
+          {filteredData.map((g, idx) => (
             <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} 
-              className="relative bg-[#1a1a1a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden z-[110]"
+              key={g.id} 
+              layout
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className="bg-white border border-slate-200 rounded-[32px] p-7 shadow-sm hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
             >
-              <div className="flex justify-between items-center p-5 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus size={20} className="text-indigo-500"/> Create Category
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
+              {/* Decorative Subtle Icon */}
+              <div className="absolute -top-10 -right-10 p-10 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity"><Package2 size={180}/></div>
+
+              <div className="relative z-10">
+                 {/* Top Row: Info & Status */}
+                 <div className="flex justify-between items-start mb-8">
+                    <div className="flex items-center gap-4">
+                       <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 text-indigo-600 flex items-center justify-center shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                          <Package2 size={24}/>
+                       </div>
+                       <div>
+                          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">{g.name}</h2>
+                          <p className="text-[11px] text-slate-400 font-bold mt-0.5">{g.subtitle}</p>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                        g.status === 'Excellent' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                        g.status === 'Low Stock' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                       }`}>{g.status}</span>
+                       <p className="text-[9px] font-mono text-slate-300 font-bold mt-1 uppercase">{g.id}</p>
+                    </div>
+                 </div>
+
+                 {/* Stats Section: High Density */}
+                 <div className="grid grid-cols-3 gap-6 bg-slate-50/60 p-5 rounded-2xl border border-slate-100/50">
+                    <div>
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">Total SKU</p>
+                       <p className="text-lg font-black text-slate-700">{g.products}</p>
+                    </div>
+                    <div>
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">Valuation</p>
+                       <p className="text-lg font-black text-indigo-600 font-mono tracking-tighter">₹{(g.sales/100000).toFixed(1)}L</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">Growth</p>
+                       <p className={`text-lg font-black flex items-center justify-end gap-1 ${g.growth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {g.growth >= 0 ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
+                          {Math.abs(g.growth)}%
+                       </p>
+                    </div>
+                 </div>
+
+                 {/* Footer Actions */}
+                 <div className="mt-8 flex items-center justify-between pt-6 border-t border-slate-100">
+                    <button 
+                       onClick={() => navigate('/admin/inventory', { state: { selectedGroup: g.name } })}
+                       className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:text-slate-800 transition-colors"
+                    >
+                       AUDIT REGISTRY <ArrowUpRight size={14}/>
+                    </button>
+                    
+                    <div className="flex gap-2">
+                       <button onClick={() => { setEditingItem(g); setFormData({...g}); setShowModal(true); }} className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-indigo-600 hover:border-indigo-600 transition-all shadow-sm"><Edit3 size={16}/></button>
+                       <button onClick={() => handleDelete(g.id)} className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-rose-600 hover:border-rose-600 transition-all shadow-sm"><Trash2 size={16}/></button>
+                    </div>
+                 </div>
               </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
-              <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Category Name</label>
-                  <input type="text" name="name" required value={formData.name} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-indigo-500 outline-none" placeholder="e.g. Frozen Foods" />
+      {/* 4. PREMIUM MODAL */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white border border-slate-200 rounded-[32px] shadow-2xl w-full max-w-md p-10 z-[110]">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">{editingItem ? 'Edit Profile' : 'Init Category'}</h3>
+                <button onClick={() => setShowModal(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-slate-800"><X size={20} /></button>
+              </div>
+              <form onSubmit={handleSave} className="space-y-6">
+                <div className="space-y-1.5">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Identity Name</label>
+                   <input required placeholder="Enter Group Name" className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-100 font-bold uppercase" value={formData.name} onChange={(e)=>setFormData({...formData, name: e.target.value})} />
                 </div>
-                
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Description</label>
-                  <textarea 
-                    name="description" 
-                    required 
-                    value={formData.description} 
-                    onChange={handleInputChange} 
-                    className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-indigo-500 outline-none min-h-[80px] resize-none" 
-                    placeholder="Short description of this group..." 
-                  />
+                <div className="space-y-1.5">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Stock Level</label>
+                   <input required type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-100 font-black" value={formData.products} onChange={(e)=>setFormData({...formData, products: e.target.value})} />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Initial Status</label>
-                  <select name="status" value={formData.status} onChange={handleInputChange} className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-indigo-500 outline-none font-bold">
-                    <option value="Active" className="text-green-500">Active</option>
-                    <option value="Inactive" className="text-red-500">Inactive</option>
-                  </select>
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition-colors">Cancel</button>
-                  <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-[0_0_15px_rgba(79,70,229,0.2)]">Save Category</button>
-                </div>
+                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 uppercase tracking-widest text-xs flex items-center justify-center gap-2 mt-4 transition-all">
+                   <CheckCircle2 size={18}/> DEPLOY TO CATALOG
+                </button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
     </div>
   );
 };

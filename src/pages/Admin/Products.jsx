@@ -1,265 +1,246 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Search, Plus, MoreVertical, X } from 'lucide-react';
+import { 
+  Plus, Search, LayoutGrid, List, Filter, Edit3, Trash2, 
+  X, AlertTriangle, ShoppingBag, TrendingUp, Package,
+  ArrowUpRight, CheckCircle2, ChevronRight
+} from 'lucide-react';
 
 const Products = () => {
+  // --- 1. STATE MANAGEMENT ---
+  const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
-  // 1. Move Static Data to State
-  const [productsData, setProductsData] = useState([
-    { id: 'PRD-001', name: 'Premium Basmati Rice 5kg', group: 'Grocery', price: '₹850', stock: 120, status: 'Active' },
-    { id: 'PRD-002', name: 'Sunflower Oil 1L', group: 'Grocery', price: '₹145', stock: 4, status: 'Low Stock' },
-    { id: 'PRD-003', name: 'Wireless Mouse', group: 'Electronics', price: '₹499', stock: 15, status: 'Active' },
-    { id: 'PRD-004', name: 'Almonds 500g', group: 'Dry Fruits', price: '₹450', stock: 0, status: 'Out of Stock' },
+  // Data from Products.jsx
+  const [products, setProducts] = useState([
+    { id: 'PRD-001', name: 'Premium Basmati Rice 5kg', group: 'Grocery', price: 850, stock: 120, status: 'Active', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400' },
+    { id: 'PRD-002', name: 'Sunflower Oil 1L', group: 'Grocery', price: 145, stock: 4, status: 'Low Stock', image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=400' },
+    { id: 'PRD-003', name: 'Wireless Mouse', group: 'Electronics', price: 499, stock: 15, status: 'Active', image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&q=80&w=400' },
+    { id: 'PRD-004', name: 'Almonds 500g', group: 'Dry Fruits', price: 450, stock: 0, status: 'Out of Stock', image: 'https://images.unsplash.com/photo-1508061461508-cb18c242f556?auto=format&fit=crop&q=80&w=400' },
+    { id: 'PRD-014', name: 'USB-C Charging Cable', group: 'Electronics', price: 299, stock: 100, status: 'Active', image: 'https://images.unsplash.com/photo-1589492477829-5e65395b66cc?auto=format&fit=crop&q=80&w=400' },
+    { id: 'PRD-015', name: 'Smart Watch Z2', group: 'Electronics', price: 2499, stock: 18, status: 'Active', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=400' },
   ]);
 
-  // 2. Form State for New Product
-  const [formData, setFormData] = useState({
-    name: '',
-    group: 'Grocery',
-    price: '',
-    stock: ''
-  });
+  const [formData, setFormData] = useState({ name: '', group: 'Grocery', price: '', stock: '', image: '' });
 
-  // Handle Input Changes
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // --- 2. FILTER & SEARCH LOGIC ---
+  const filteredProducts = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
+      const matchesGroup = activeFilter === 'All' || p.group === activeFilter;
+      return matchesSearch && matchesGroup;
+    });
+  }, [products, searchTerm, activeFilter]);
 
-  // 3. Handle Form Submit
-  const handleAddSubmit = (e) => {
+  const metrics = useMemo(() => {
+    const low = products.filter(p => p.stock < 10 && p.stock > 0).length;
+    const empty = products.filter(p => p.stock === 0).length;
+    const totalValue = products.reduce((acc, p) => acc + (p.price * p.stock), 0);
+    return { low, empty, totalValue };
+  }, [products]);
+
+  const categories = ['All', 'Grocery', 'Electronics', 'Clothing', 'Snacks', 'Household', 'Dry Fruits'];
+
+  // --- 3. HANDLERS ---
+  const handleSave = (e) => {
     e.preventDefault();
-    
     const stockNum = parseInt(formData.stock) || 0;
-    
-    // Auto-calculate status
-    let newStatus = 'Active';
-    if (stockNum === 0) newStatus = 'Out of Stock';
-    else if (stockNum < 10) newStatus = 'Low Stock';
+    const priceNum = parseFloat(formData.price) || 0;
+    let status = 'Active';
+    if (stockNum === 0) status = 'Out of Stock';
+    else if (stockNum < 10) status = 'Low Stock';
 
-    // Generate pseudo-ID
-    const newId = `PRD-00${productsData.length + 1}`;
-
-    const newProduct = {
-      id: newId,
-      name: formData.name,
-      group: formData.group,
-      price: `₹${formData.price}`,
-      stock: stockNum,
-      status: newStatus
-    };
-
-    // Update State (add to top of list)
-    setProductsData([newProduct, ...productsData]);
-    
-    // Close Modal & Reset Form
-    setShowAddModal(false);
-    setFormData({ name: '', group: 'Grocery', price: '', stock: '' });
+    if (editingProduct) {
+      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...formData, price: priceNum, stock: stockNum, status } : p));
+    } else {
+      const newProduct = {
+        ...formData, id: `PRD-${100 + products.length + 1}`,
+        price: priceNum, stock: stockNum, status,
+        image: formData.image || 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&q=80&w=400'
+      };
+      setProducts([newProduct, ...products]);
+    }
+    setShowModal(false);
+    setEditingProduct(null);
   };
 
-  // Filter products based on search
-  const filteredProducts = productsData.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure?")) setProducts(products.filter(p => p.id !== id));
+  };
+
+  const ProductImage = ({ src, alt }) => {
+    const [error, setError] = useState(false);
+    return (
+      <div className="w-full h-full bg-slate-50 flex items-center justify-center border-b border-slate-100 overflow-hidden">
+        {!error ? (
+          <img src={src} alt={alt} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-[1s]" onError={() => setError(true)} />
+        ) : (
+          <div className="flex flex-col items-center text-slate-300"><Package size={40} /><span className="text-[10px] font-bold mt-2 uppercase">No Visual</span></div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-6 relative">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        
-        {/* Top Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600/20 p-3 rounded-lg border border-blue-500/30">
-              <Package className="text-blue-500" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Products Catalog</h2>
-              <p className="text-sm text-gray-500">Manage your items, pricing, and stock</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-              <input
-                type="text"
-                placeholder="Search products..."
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-blue-500 text-white text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm whitespace-nowrap"
-            >
-              <Plus size={18} /> Add Product
-            </button>
-          </div>
+    <div className="space-y-6 font-plus-jakarta pb-20">
+      
+      {/* 1. ANALYTICS STRIP */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+           <div>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Master Catalog</p>
+              <h3 className="text-2xl font-black text-slate-800 mt-1">{products.length} <span className="text-xs text-blue-600 font-bold uppercase">SKUs</span></h3>
+           </div>
+           <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100"><ShoppingBag size={20}/></div>
         </div>
-
-        {/* Data Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#121212] border-b border-gray-800 text-gray-400 uppercase text-xs font-bold tracking-wider">
-                <tr>
-                  <th className="p-4">Product ID</th>
-                  <th className="p-4">Name</th>
-                  <th className="p-4">Commodity Group</th>
-                  <th className="p-4">Price</th>
-                  <th className="p-4">Stock</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredProducts.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 font-mono text-blue-400 font-medium">{item.id}</td>
-                    <td className="p-4 text-gray-200 font-bold">{item.name}</td>
-                    <td className="p-4 text-gray-400">{item.group}</td>
-                    <td className="p-4 text-gray-200 font-mono">{item.price}</td>
-                    <td className="p-4 text-gray-300">{item.stock} Pcs</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        item.status === 'Active' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                        item.status === 'Low Stock' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-                        'bg-red-500/10 text-red-500 border border-red-500/20'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <button className="text-gray-500 hover:text-blue-500 transition-colors p-1">
-                        <MoreVertical size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredProducts.length === 0 && (
-                  <tr>
-                    <td colSpan="7" className="p-8 text-center text-gray-500">
-                      No products found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+           <div>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Alerts</p>
+              <h3 className="text-2xl font-black text-rose-600 mt-1">{metrics.low + metrics.empty}</h3>
+           </div>
+           <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl border border-rose-100"><AlertTriangle size={20}/></div>
         </div>
-      </motion.div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm md:col-span-2 flex items-center justify-between">
+           <div>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Aggregate Valuation</p>
+              <h3 className="text-2xl font-black text-emerald-600 font-mono mt-1">₹{metrics.totalValue.toLocaleString()}</h3>
+           </div>
+           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100"><TrendingUp size={20}/></div>
+        </div>
+      </div>
 
-      {/* Add Product Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setShowAddModal(false)}
+      {/* 2. COMMAND TOOLBAR */}
+      <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-4 shadow-sm sticky top-2 z-30">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LayoutGrid size={18} /></button>
+            <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><List size={18} /></button>
+          </div>
+          <div className="relative group min-w-[350px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search product ID, Name or Class..." 
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium" 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
             />
-            
-            {/* Modal Content */}
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.95, opacity: 0 }} 
-              className="relative bg-[#1a1a1a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden z-10"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus size={20} className="text-blue-500"/> Add New Product
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
+          </div>
+        </div>
+        <button onClick={() => { setEditingProduct(null); setFormData({name:'', group:'Grocery', price:'', stock:'', image:''}); setShowModal(true); }} className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition-all text-xs tracking-widest">
+          <Plus size={18} strokeWidth={3}/> ADD PRODUCT
+        </button>
+      </div>
+
+      {/* 3. PRODUCT GRID / TABLE AREA */}
+      <AnimatePresence mode='wait'>
+        {filteredProducts.length > 0 ? (
+          viewMode === 'grid' ? (
+            <motion.div key="grid" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {filteredProducts.map(p => (
+                <motion.div key={p.id} layout className="bg-white rounded-[32px] border border-slate-200 overflow-hidden group hover:shadow-2xl hover:border-blue-100 transition-all duration-500 relative">
+                  <div className="h-52 relative">
+                    <ProductImage src={p.image} alt={p.name} />
+                    <div className="absolute top-4 left-4"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border shadow-sm ${p.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : p.status === 'Low Stock' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{p.status}</span></div>
+                    
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                      <button onClick={() => { setEditingProduct(p); setFormData({...p}); setShowModal(true); }} className="p-2.5 bg-white text-blue-600 rounded-xl shadow-xl border border-slate-100 hover:bg-blue-600 hover:text-white transition-all"><Edit3 size={16}/></button>
+                      <button onClick={() => handleDelete(p.id)} className="p-2.5 bg-white text-rose-600 rounded-xl shadow-xl border border-slate-100 hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={16}/></button>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h4 className="text-slate-800 font-extrabold text-lg truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">{p.name}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{p.id} • {p.group}</p>
+                    <div className="mt-5 pt-5 border-t border-slate-50 flex justify-between items-center">
+                       <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Valuation</p>
+                          <p className="text-xl font-black text-slate-800 font-mono tracking-tighter">₹{p.price.toLocaleString()}</p>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Stock</p>
+                          <p className={`text-sm font-black ${p.stock < 10 ? 'text-amber-600' : 'text-slate-600'}`}>{p.stock} Pcs</p>
+                       </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-slate-50 text-slate-400 font-bold uppercase tracking-[0.15em] border-b border-slate-100">
+                  <tr><th className="p-5 pl-10">Inventory Entity</th><th className="p-5">Group</th><th className="p-5 text-right">Price</th><th className="p-5 text-right">Stock</th><th className="p-5 text-center">Lifecycle</th><th className="p-5 pr-10"></th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredProducts.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
+                      <td className="p-5 pl-10">
+                         <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 shadow-sm"><img src={p.image} className="w-full h-full object-cover" alt=""/></div>
+                            <div><p className="text-sm font-black text-slate-800 uppercase tracking-tight">{p.name}</p><p className="text-[10px] text-slate-400 font-bold font-mono">{p.id}</p></div>
+                         </div>
+                      </td>
+                      <td className="p-5"><span className="px-2 py-0.5 rounded text-[9px] font-bold text-slate-500 uppercase border border-slate-200">{p.group}</span></td>
+                      <td className="p-5 text-right font-black text-slate-800 text-sm font-mono">₹{p.price.toLocaleString()}</td>
+                      <td className={`p-5 text-right font-black text-sm ${p.stock < 10 ? 'text-amber-600' : 'text-slate-600'}`}>{p.stock} Pcs</td>
+                      <td className="p-5 text-center"><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${p.status === 'Active' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>{p.status}</span></td>
+                      <td className="p-5 pr-10 text-right">
+                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => { setEditingProduct(p); setFormData({...p}); setShowModal(true); }} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"><Edit3 size={14}/></button>
+                            <button onClick={() => handleDelete(p.id)} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={14}/></button>
+                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </motion.div>
+          )
+        ) : (
+          <div className="p-20 text-center bg-white rounded-[40px] border border-dashed border-slate-200">
+             <Search size={48} className="mx-auto text-slate-200 mb-4" />
+             <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest">No matching SKUs found</h3>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. MODAL */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white border border-slate-200 rounded-[40px] shadow-2xl w-full max-w-md p-10 z-[110]">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">{editingProduct ? 'Update SKU' : 'New Registry'}</h3>
+                <button onClick={() => setShowModal(false)} className="bg-slate-50 p-3 rounded-full text-slate-400 hover:text-slate-800 transition-all"><X size={20} /></button>
               </div>
-
-              <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Product Name</label>
-                  <input 
-                    type="text" 
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-blue-500 outline-none" 
-                    placeholder="e.g. 1kg Sugar" 
-                  />
+              <form onSubmit={handleSave} className="space-y-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Identity Name</label>
+                   <input required placeholder="Enter Product Name" className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20 font-bold uppercase" value={formData.name} onChange={(e)=>setFormData({...formData, name: e.target.value})} />
                 </div>
-                
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Commodity Group</label>
-                  <select 
-                    name="group"
-                    value={formData.group}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-blue-500 outline-none"
-                  >
-                    <option value="Grocery">Grocery</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Clothing">Clothing</option>
-                    <option value="Dry Fruits">Dry Fruits</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Price (₹)</label>
-                    <input 
-                      type="number" 
-                      name="price"
-                      required
-                      min="0"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-blue-500 outline-none font-mono" 
-                      placeholder="0.00" 
-                    />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Retail Val (₹)</label>
+                    <input type="number" required placeholder="0.00" className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20 font-black" value={formData.price} onChange={(e)=>setFormData({...formData, price: e.target.value})} />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Stock Quantity</label>
-                    <input 
-                      type="number" 
-                      name="stock"
-                      required
-                      min="0"
-                      value={formData.stock}
-                      onChange={handleInputChange}
-                      className="w-full bg-[#121212] border border-gray-700 rounded-lg p-2.5 text-white focus:border-blue-500 outline-none font-mono" 
-                      placeholder="0" 
-                    />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Stock Level</label>
+                    <input type="number" required placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20 font-black" value={formData.stock} onChange={(e)=>setFormData({...formData, stock: e.target.value})} />
                   </div>
                 </div>
-
-                <div className="pt-4 flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowAddModal(false)}
-                    className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition-colors"
-                  >
-                    Save Product
-                  </button>
-                </div>
+                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2 mt-4 transition-all">
+                   <CheckCircle2 size={18}/> DEPLOY TO CATALOG
+                </button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
     </div>
   );
 };
