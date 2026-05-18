@@ -7,7 +7,6 @@ const PromotionsManagement = () => {
     { id: 1, title: "Midnight Flash Sale", discount: "Flat ₹500 OFF", category: "Electronics", validTill: "18 May 2026", status: "Live" },
     { id: 2, title: "Weekend Fashion Bonanza", discount: "20% OFF", category: "Apparel", validTill: "17 May 2026", status: "Ending Soon" },
     { id: 3, title: "Monsoon BOGO Treat", discount: "Buy 1 Get 1", category: "Groceries", validTill: "30 May 2026", status: "Scheduled" },
-
     { id: 5, title: "First Users Welcome Pack", discount: "Flat ₹150 OFF", category: "All Categories", validTill: "31 June 2026", status: "Live" }
   ];
 
@@ -32,7 +31,9 @@ const PromotionsManagement = () => {
   };
 
   const handleDelete = (title) => {
-    alert(`Action: Delete request triggered for "${title}"`);
+    if(window.confirm(`Are you sure you want to delete "${title}"?`)) {
+       alert(`Action: Delete request triggered for "${title}"`);
+    }
   };
 
   const filteredPromotions = initialPromotions.filter(promo => {
@@ -44,44 +45,52 @@ const PromotionsManagement = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#09090d] text-gray-200 p-6 md:p-2 font-sans">
+    <div className="space-y-6 font-plus-jakarta pb-20 p-4 bg-slate-50 min-h-screen">
 
-      {/* Upgraded Engaging Professional Controls Layout Section */}
-      <div className="bg-[#111116] border border-white/[0.04] rounded-2xl p-5 mb-8 shadow-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-white/[0.04]">
-
-          {/* Enhanced Search Input */}
-          <div className="relative w-full sm:w-80 group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
-            <input
-              type="text"
-              placeholder="Search campaigns..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#161620] border border-white/[0.05] focus:border-blue-500/80 focus:bg-[#181826] rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-gray-200 placeholder-gray-600 outline-none transition-all shadow-inner"
-            />
+      {/* HEADER */}
+      <div className="bg-white border border-slate-200 rounded-[24px] p-5 shadow-sm mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-[18px] bg-blue-50 flex items-center justify-center border border-blue-100">
+              <Gift size={26} className="text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-slate-800">Promotions</h1>
+              <p className="text-slate-500 text-sm mt-1 font-medium">Manage campaigns, offers, and sales</p>
+            </div>
           </div>
+          <button
+            onClick={() => openModal('Add')}
+            className="bg-blue-600 hover:bg-blue-700 transition-all text-white px-6 py-3 rounded-[16px] font-bold flex items-center gap-2 text-sm shadow-lg shadow-blue-600/20"
+          >
+            <Plus size={18} strokeWidth={3} /> ADD PROMOTION
+          </button>
+        </div>
+      </div>
 
-          {/* Add Promotion Button */}
-          <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
-            <button
-              onClick={() => openModal('Add')}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20 active:scale-98 w-full sm:w-auto"
-            >
-              <Plus size={16} className="stroke-[2.5]" /> Add Promotion
-            </button>
-          </div>
+      {/* COMMAND TOOLBAR */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm mb-6">
+        {/* Search Box */}
+        <div className="relative w-full md:w-96 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search campaigns..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all"
+          />
         </div>
 
-        {/* Upgraded Premium Filter Tabs Row with Vibrant Active States */}
-        <div className="flex items-center overflow-x-auto gap-2 pt-4 custom-scrollbar">
+        {/* Table Tab Filters */}
+        <div className="flex items-center overflow-x-auto gap-2 custom-scrollbar pb-1 md:pb-0">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap rounded-lg border transition-all duration-200 ${activeTab === tab
-                ? 'bg-gradient-to-r from-blue-600/15 to-indigo-600/15 text-blue-400 border-blue-500/40 shadow-md shadow-blue-500/5'
-                : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/[0.02]'
+              className={`px-5 py-2.5 text-xs font-bold uppercase tracking-widest whitespace-nowrap rounded-xl border transition-all duration-200 ${activeTab === tab
+                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/20'
+                : 'text-slate-500 border-slate-200 bg-white hover:bg-slate-50 hover:text-slate-700'
                 }`}
             >
               {tab}
@@ -90,147 +99,147 @@ const PromotionsManagement = () => {
         </div>
       </div>
 
-      {/* Upgraded Premium Card Grid Layout */}
+      {/* PROMOTION CARDS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPromotions.length > 0 ? (
           filteredPromotions.map((promo) => {
-            // Pick side border color based on status dynamically
             const statusConfig =
-              promo.status === 'Live' ? { border: 'border-l-emerald-500', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' } :
-                promo.status === 'Ending Soon' ? { border: 'border-l-amber-500', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20' } :
-                  promo.status === 'Scheduled' ? { border: 'border-l-blue-500', badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20' } :
-                    { border: 'border-l-gray-600', badge: 'bg-gray-800 text-gray-500 border-transparent' };
+              promo.status === 'Live' ? { border: 'border-l-emerald-500', badge: 'bg-emerald-50 text-emerald-600 border-emerald-100' } :
+                promo.status === 'Ending Soon' ? { border: 'border-l-amber-500', badge: 'bg-amber-50 text-amber-600 border-amber-100' } :
+                  promo.status === 'Scheduled' ? { border: 'border-l-blue-500', badge: 'bg-blue-50 text-blue-600 border-blue-100' } :
+                    { border: 'border-l-slate-400', badge: 'bg-slate-100 text-slate-600 border-slate-200' };
 
             return (
               <div
                 key={promo.id}
-                className={`relative bg-[#13131a]/60 backdrop-blur-md border border-white/[0.04] ${statusConfig.border} border-l-4 rounded-xl p-5 flex flex-col justify-between shadow-xl hover:shadow-2xl hover:bg-[#161622]/80 transition-all duration-200 group`}
+                className={`bg-white border border-slate-200 ${statusConfig.border} border-l-4 rounded-3xl p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group`}
               >
                 <div>
                   {/* Top Header Row inside Card */}
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    {/* Uniform clean style for all categories */}
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-white/[0.03] text-gray-400 px-2 py-1 rounded-md border border-white/[0.02]">
-                      <Tag size={11} className="text-yellow-400" />
+                  <div className="flex items-center justify-between gap-2 mb-5">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-slate-50 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100">
+                      <Tag size={12} className="text-amber-500" />
                       {promo.category}
                     </span>
 
-                    <span className={`text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded border ${statusConfig.badge}`}>
+                    <span className={`text-[9px] font-black tracking-widest uppercase px-3 py-1.5 rounded-lg border ${statusConfig.badge}`}>
                       {promo.status}
                     </span>
                   </div>
 
                   {/* Promotion Main Titles */}
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-gray-500 tracking-wide uppercase">{promo.title}</p>
-                    <h2 className="text-2xl font-black text-white tracking-tight group-hover:text-blue-400 transition-colors duration-200">
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">{promo.title}</p>
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors duration-200">
                       {promo.discount}
                     </h2>
                   </div>
                 </div>
 
                 {/* Separator Line */}
-                <div className="w-full h-[1px] bg-white/[0.03] my-4" />
+                <div className="w-full h-[1px] bg-slate-100 my-5" />
 
                 {/* Footer Section */}
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                    <Calendar size={13} className="text-gray-600" />
-                    <span>Valid till: <span className="text-gray-400 font-medium">{promo.validTill}</span></span>
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <Calendar size={14} className="text-blue-500" />
+                    <span>Valid till: <span className="text-slate-700">{promo.validTill}</span></span>
                   </div>
 
-                  {/* Actions Utility Grid with consistent colored buttons */}
-                  <div className="flex items-center gap-1">
+                  {/* Actions Utility Grid */}
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => openModal('Edit', promo.title)}
-                      className="p-1.5 bg-[#181824] hover:bg-amber-500/10 border border-white/[0.04] text-gray-400 hover:text-amber-400 rounded-md transition-all"
+                      className="p-2 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-slate-400 hover:text-blue-600 rounded-xl transition-all shadow-sm"
                       title="Edit Campaign"
                     >
-                      <Edit3 size={13} className='text-green-400' />
+                      <Edit3 size={15} />
                     </button>
                     <button
                       onClick={() => handleDelete(promo.title)}
-                      className="p-1.5 bg-[#181824] hover:bg-red-500/10 border border-white/[0.04] text-gray-400 hover:text-red-400 rounded-md transition-all"
+                      className="p-2 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-400 hover:text-rose-600 rounded-xl transition-all shadow-sm"
                       title="Remove Campaign"
                     >
-                      <Trash2 size={13} className='text-red-400' />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
-
               </div>
             );
           })
         ) : (
-          <div className="col-span-full py-16 bg-[#121218]/50 border border-dashed border-gray-800 rounded-xl text-center text-sm text-gray-500">
-            No active campaigns found matching the filters.
+          <div className="col-span-full py-20 bg-white rounded-[32px] border border-dashed border-slate-200 text-center">
+            <Gift size={48} className="mx-auto text-slate-200 mb-4" />
+            <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest">No matching campaigns found</h3>
           </div>
         )}
       </div>
 
-      {/* Simple Standard Popup Modal Frame */}
+      {/* CREATE / EDIT PROMOTION MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#13131a] border border-white/[0.06] w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl">
 
-            <div className="flex items-center justify-between p-5 border-b border-gray-800/60">
-              <h3 className="text-md font-bold text-white flex items-center gap-2">
-                {modalType === 'Add' ? <Gift size={16} className="text-blue-500" /> : <Layers size={16} className="text-blue-500" />}
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                {modalType === 'Add' ? <Gift size={20} className="text-blue-600" /> : <Layers size={20} className="text-blue-600" />}
                 {modalType === 'Add' ? 'Create New Promotion' : 'Edit Promotion'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
+                className="text-slate-400 hover:text-slate-800 bg-white p-2 rounded-full border border-slate-200 transition-colors"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="p-5 space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Campaign Name</label>
+            {/* Modal Form Body */}
+            <form onSubmit={handleFormSubmit} className="p-6 space-y-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Campaign Name</label>
                 <input
                   type="text"
                   placeholder="e.g., Year End Bash"
                   defaultValue={modalType === 'Edit' ? selectedPromoTitle : ''}
                   required
-                  className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-bold transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Offer / Discount</label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Offer / Discount</label>
                   <input
                     type="text"
                     placeholder="e.g., 30% OFF"
                     required
-                    className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-bold transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Category</label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Category</label>
                   <input
                     type="text"
                     placeholder="e.g., Footwear"
                     required
-                    className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-bold transition-all"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Expiry Date</label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Expiry Date</label>
                   <input
                     type="date"
                     required
-                    className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-bold transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Status</label>
-                  <select className="w-full bg-gray-900/50 border border-gray-800 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none transition-all cursor-pointer">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Status</label>
+                  <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-bold transition-all cursor-pointer">
                     <option>Live</option>
                     <option>Scheduled</option>
                     <option>Ending Soon</option>
@@ -238,17 +247,18 @@ const PromotionsManagement = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-800/60 mt-6">
+              {/* Modal Footer Controls */}
+              <div className="flex items-center justify-end gap-3 pt-4 mt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+                  className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-blue-600/10"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-blue-600/20"
                 >
                   Save Changes
                 </button>
