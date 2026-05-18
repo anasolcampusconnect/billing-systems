@@ -1,310 +1,336 @@
-import React, { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion"; // <--- Dheenini add cheyandi
+import React, { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
-  Search, Plus, MoreVertical, Package2, Store, CalendarRange,
-  CheckCircle2, XCircle, Eye, Edit, Trash2, Layers3,
-  Filter, Download, Sparkles, X, ChevronDown
+  Search, Layers, Eye, Download, Filter, Plus, Box,
+  Tag, CheckCircle2, AlertCircle, Archive, MoreHorizontal, 
+  Trash2, Edit, ChevronDown, X, PackageOpen
 } from "lucide-react";
+
 const Assortments = () => {
-  // --- 1. STATE MANAGEMENT ---
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [editingItem, setEditingItem] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
-  const [formData, setFormData] = useState({
-    assortmentName: "", store: "", category: "", products: "",
-    startDate: "", endDate: "", status: "Active",
-  });
-
+  // 1. DATA REGISTRY
   const [assortments, setAssortments] = useState([
-    { id: "AST-1001", assortmentName: "Summer Grocery Combo", store: "Hyderabad Central", category: "Grocery", products: 120, startDate: "2026-05-01", endDate: "2026-05-31", status: "Active" },
-    { id: "AST-1002", assortmentName: "Festival Electronics", store: "Bangalore Mall", category: "Electronics", products: 65, startDate: "2026-05-10", endDate: "2026-06-10", status: "Scheduled" },
-    { id: "AST-1003", assortmentName: "Dairy Essentials", store: "Store 12", category: "Dairy", products: 40, startDate: "2026-04-05", endDate: "2026-04-30", status: "Expired" },
+    { id: "AST-9001", name: "Summer Essentials 2026", category: "Seasonal", items: 145, value: 450000, status: "Active", lastUpdated: "2026-05-18" },
+    { id: "AST-9002", name: "Tier 1 Metro Stores Bundle", category: "Store Allocation", items: 850, value: 2500000, status: "Active", lastUpdated: "2026-05-15" },
+    { id: "AST-9003", name: "Clearance & Liquidation (Q1)", category: "Promotional", items: 320, value: 120000, status: "Draft", lastUpdated: "2026-05-14" },
+    { id: "AST-9004", name: "Corporate Gift Hampers", category: "B2B Custom", items: 45, value: 850000, status: "Active", lastUpdated: "2026-05-12" },
+    { id: "AST-9005", name: "Winter Collection 2025", category: "Seasonal", items: 210, value: 680000, status: "Archived", lastUpdated: "2026-02-28" },
+    { id: "AST-9006", name: "Organic Groceries Pack", category: "Bundles", items: 18, value: 4500, status: "Active", lastUpdated: "2026-05-10" },
+    { id: "AST-9007", name: "Electronics Diwali Setup", category: "Promotional", items: 55, value: 4200000, status: "Draft", lastUpdated: "2026-05-08" },
   ]);
 
-  // --- 2. CORE LOGIC (SEARCH & FILTER) ---
-  const filteredData = useMemo(() => {
+  const [formData, setFormData] = useState({ name: "", category: "Seasonal", items: "", value: "", status: "Draft" });
+
+  // 2. SEARCH LOGIC
+  const filteredAssortments = useMemo(() => {
     const q = search.toLowerCase().trim();
-    return assortments.filter((item) => {
-      const matchesSearch = 
-        item.assortmentName.toLowerCase().includes(q) ||
-        item.store.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q) ||
-        item.id.toLowerCase().includes(q);
-      
-      const matchesStatus = statusFilter === "All" || item.status === statusFilter;
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [search, assortments, statusFilter]);
+    return assortments.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q)
+    );
+  }, [search, assortments]);
 
-  // --- 3. EXPORT FUNCTIONALITY ---
+  // 3. EXPORT LOGIC
   const handleExport = () => {
-    if (filteredData.length === 0) return alert("No data to export!");
-
-    const headers = ["ID", "Assortment Name", "Store", "Category", "Products", "Start Date", "End Date", "Status"];
-    const rows = filteredData.map(a => [a.id, a.assortmentName, a.store, a.category, a.products, a.startDate, a.endDate, a.status]);
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n" 
-      + rows.map(e => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Assortments_Report_${new Date().toLocaleDateString()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    alert("Exporting Assortments CSV...");
   };
 
-  // --- 4. CRUD HANDLERS ---
   const handleSave = (e) => {
     e.preventDefault();
-    if (editingItem) {
-      setAssortments(assortments.map(a => a.id === editingItem.id ? { ...formData, id: a.id, products: Number(formData.products) } : a));
-    } else {
-      const newData = {
-        ...formData,
-        id: `AST-${1000 + assortments.length + 1}`,
-        products: Number(formData.products),
-      };
-      setAssortments([newData, ...assortments]);
-    }
-    closeModal();
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this assortment?")) {
-      setAssortments(assortments.filter(a => a.id !== id));
-      setActiveMenu(null);
-    }
-  };
-
-  const openModal = (item = null) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({ ...item });
-    } else {
-      setEditingItem(null);
-      setFormData({ assortmentName: "", store: "", category: "", products: "", startDate: "", endDate: "", status: "Active" });
-    }
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
+    const newEntry = {
+      id: `AST-${9000 + assortments.length + 1}`,
+      name: formData.name,
+      category: formData.category,
+      items: Number(formData.items),
+      value: Number(formData.value),
+      status: formData.status,
+      lastUpdated: new Date().toISOString().split('T')[0],
+    };
+    setAssortments([newEntry, ...assortments]);
+    setFormData({ name: "", category: "Seasonal", items: "", value: "", status: "Draft" });
     setShowModal(false);
-    setEditingItem(null);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (
-    <div className="p-6 bg-[#f8fafc] min-h-screen space-y-8 font-plus-jakarta" onClick={() => setActiveMenu(null)}>
+    // ROOT: Changed from h-screen/overflow-hidden to min-h-screen for natural scrolling
+    <div className="min-h-screen w-full bg-[#F8FAFC] flex flex-col font-sans">
       
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-        <div>
-          <h1 className="text-4xl font-black text-slate-800 tracking-tight">Assortments</h1>
-          <p className="text-slate-500 font-semibold mt-2">Manage seasonal product bundles and category allocations</p>
+      {/* CONTENT WRAPPER: Removed flex-1 and min-h-0 */}
+      <div className="flex flex-col w-full p-6 lg:p-8 gap-6">
+        
+        {/* HEADER SECTION */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 shrink-0">
+          <div>
+             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+               Product Assortments
+             </h1>
+             <p className="text-sm text-slate-500 font-medium mt-1">Manage product groupings, store allocations, and seasonal bundles.</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+             <button 
+                onClick={handleExport} 
+                className="h-10 px-4 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold flex items-center gap-2 shadow-sm transition-all text-sm whitespace-nowrap"
+             >
+                <Download size={16}/> Export List
+             </button>
+             <button 
+                onClick={() => setShowModal(true)}
+                className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-2 shadow-sm transition-all text-sm whitespace-nowrap"
+              >
+               <Plus size={16} strokeWidth={3}/> Create Assortment
+             </button>
+          </div>
         </div>
-        <button onClick={() => openModal()} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-indigo-100 transition-all active:scale-95 text-sm uppercase tracking-widest">
-          <Plus size={20} strokeWidth={3} /> CREATE ASSORTMENT
-        </button>
-      </div>
 
-      {/* ANALYTICS STRIP */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {[
-          { label: "Total Managed", val: "248", icon: Layers3, color: "text-indigo-600", bg: "bg-indigo-50" },
-          { label: "Active Nodes", val: "82", icon: Sparkles, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Assigned Stores", val: "35", icon: Store, color: "text-orange-600", bg: "bg-orange-50" },
-          { label: "Coverage", val: "14.8K", icon: Package2, color: "text-blue-600", bg: "bg-blue-50" },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-400 uppercase text-[10px] font-black tracking-[0.2em]">{stat.label}</p>
-                <h2 className={`text-3xl font-black mt-2 ${stat.color}`}>{stat.val}</h2>
-              </div>
-              <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center shadow-inner`}>
-                <stat.icon size={26} />
-              </div>
+        {/* FLUID KPI CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full shrink-0">
+          {[
+            { label: "Active Assortments", val: "24", icon: Layers, color: "text-indigo-600", bg: "bg-indigo-50" },
+            { label: "Total SKUs Grouped", val: "8,420", icon: PackageOpen, color: "text-blue-600", bg: "bg-blue-50" },
+            { label: "Draft Collections", val: "5", icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
+            { label: "Est. Assortment Value", val: "₹1.4Cr", icon: Tag, color: "text-emerald-600", bg: "bg-emerald-50" },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+               <div className="flex items-start justify-between">
+                  <div>
+                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">{stat.label}</p>
+                     <h2 className="text-2xl font-black text-slate-900 font-mono tracking-tight">{stat.val}</h2>
+                  </div>
+                  <div className={`p-3 ${stat.bg} ${stat.color} rounded-xl shrink-0`}><stat.icon size={20} strokeWidth={2.5}/></div>
+               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* FULL-WIDTH DATA TABLE CONTAINER: Removed flex-1, overflow-hidden, and min-h-0 */}
+        <div className="flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm w-full">
+          
+          {/* Table Toolbar */}
+          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+            <div className="relative w-full sm:max-w-md">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+               <input 
+                  type="text" placeholder="Search assortments by name, ID, or category..." 
+                  className="w-full h-10 pl-9 pr-4 text-sm font-medium bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
+                  value={search} onChange={(e)=>setSearch(e.target.value)}
+               />
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+               <button className="h-10 px-4 bg-white border border-slate-200 rounded-lg flex items-center gap-2 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap">
+                 Category: All <ChevronDown size={14} className="text-slate-400" />
+               </button>
+               <button className="h-10 px-4 bg-white border border-slate-200 rounded-lg flex items-center gap-2 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap">
+                 <Filter size={16} className="text-slate-400" /> Filters
+               </button>
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* COMMAND TOOLBAR */}
-      <div className="bg-white border border-slate-200 rounded-[32px] p-3 flex flex-col xl:flex-row gap-4 xl:items-center xl:justify-between shadow-sm sticky top-2 z-30">
-        <div className="flex flex-wrap items-center gap-3 flex-1">
-          <div className="relative group flex-1 max-w-md">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search assortment, category or store identity..."
-              className="bg-slate-50 border border-slate-200 rounded-2xl h-12 pl-12 pr-4 w-full outline-none focus:ring-2 focus:ring-indigo-100 font-medium text-sm text-slate-700"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          {/* Table Area: Switched to just overflow-x-auto for horizontal scrolling on small screens */}
+          <div className="overflow-x-auto bg-white">
+             <table className="w-full text-left text-sm border-collapse table-fixed min-w-[800px]">
+                <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
+                   <tr className="text-[11px] uppercase tracking-widest text-slate-500 font-bold">
+                      <th className="px-6 py-4 w-[30%]">Assortment Name & ID</th>
+                      <th className="px-6 py-4 w-[15%]">Category</th>
+                      <th className="px-6 py-4 w-[15%] text-center">Total Items</th>
+                      <th className="px-6 py-4 w-[15%]">Status</th>
+                      <th className="px-6 py-4 w-[15%] text-right">Est. Value</th>
+                      <th className="px-6 py-4 w-[10%] text-center">Actions</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                   {filteredAssortments.map((a, idx) => (
+                      <motion.tr 
+                        key={a.id} 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.05 }}
+                        className="hover:bg-slate-50/80 transition-colors group cursor-default"
+                      >
+                         <td className="px-6 py-4 truncate">
+                            <div className="flex items-center gap-3">
+                               <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border 
+                                 ${a.status === 'Active' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 
+                                   a.status === 'Draft' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
+                                   'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                                 <Layers size={18}/>
+                               </div>
+                               <div className="min-w-0 flex-1">
+                                  <div className="font-bold text-slate-900 truncate" title={a.name}>{a.name}</div>
+                                  <div className="text-xs text-slate-500 mt-0.5 truncate">{a.id} • Updated {formatDate(a.lastUpdated)}</div>
+                               </div>
+                            </div>
+                         </td>
+                         <td className="px-6 py-4 truncate">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold shadow-sm truncate max-w-full">
+                               <Tag size={12}/> {a.category}
+                            </span>
+                         </td>
+                         <td className="px-6 py-4 text-center font-bold text-slate-700 truncate">
+                            {a.items} <span className="text-xs text-slate-400 font-medium ml-1">SKUs</span>
+                         </td>
+                         <td className="px-6 py-4 truncate">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
+                              a.status === 'Active' ? 'text-emerald-700 bg-emerald-50 border border-emerald-100' : 
+                              a.status === 'Draft' ? 'text-amber-700 bg-amber-50 border border-amber-100' :
+                              'text-slate-600 bg-slate-100 border border-slate-200'
+                            }`}>
+                              {a.status === 'Active' && <CheckCircle2 size={14}/>}
+                              {a.status === 'Draft' && <AlertCircle size={14}/>}
+                              {a.status === 'Archived' && <Archive size={14}/>}
+                              {a.status}
+                            </span>
+                         </td>
+                         <td className="px-6 py-4 text-right font-mono font-black text-base text-slate-900 truncate">
+                            {formatCurrency(a.value)}
+                         </td>
+                         <td className="px-6 py-4 text-center relative">
+                            <button
+                              onClick={() => setActiveMenu(activeMenu === a.id ? null : a.id)}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors inline-flex"
+                            >
+                              <MoreHorizontal size={18} />
+                            </button>
 
-          <div className="relative">
-             <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-             <select 
-               className="h-12 pl-10 pr-10 rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-widest appearance-none outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer"
-               value={statusFilter}
-               onChange={(e) => setStatusFilter(e.target.value)}
-             >
-                <option value="All">Life-cycle: ALL</option>
-                <option value="Active">Active</option>
-                <option value="Scheduled">Scheduled</option>
-                <option value="Expired">Expired</option>
-             </select>
-             <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          </div>
-
-          <button 
-            onClick={handleExport}
-            className="h-12 px-6 rounded-2xl border border-slate-200 bg-slate-50 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 transition-all active:scale-95"
-          >
-            <Download size={16} /> EXPORT MANIFEST
-          </button>
-        </div>
-      </div>
-
-      {/* REGISTRY TABLE */}
-      <div className="bg-white border border-slate-200 rounded-[40px] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-400 uppercase text-[10px] font-black tracking-[0.2em]">
-                <th className="p-6 pl-10">Assortment Identity</th>
-                <th className="p-6">Origin Store</th>
-                <th className="p-6">Classification</th>
-                <th className="p-6 text-center">Unit Count</th>
-                <th className="p-6">Operation Timeline</th>
-                <th className="p-6">Status</th>
-                <th className="p-6 pr-10"></th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100">
-              {filteredData.map((item) => (
-                <tr key={item.id} className="group hover:bg-slate-50 transition-all cursor-default">
-                  <td className="p-6 pl-10">
-                    <div>
-                      <h3 className="font-black text-slate-800 text-sm group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{item.assortmentName}</h3>
-                      <p className="text-slate-400 text-[10px] font-bold mt-1 font-mono">{item.id}</p>
-                    </div>
-                  </td>
-                  <td className="p-6 text-slate-600 font-bold text-xs">{item.store}</td>
-                  <td className="p-6">
-                    <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider border border-indigo-100">
-                      {item.category}
-                    </span>
-                  </td>
-                  <td className="p-6 text-center font-black text-slate-700 text-sm">{item.products} <span className="text-[10px] text-slate-400 font-normal ml-0.5">SKUs</span></td>
-                  <td className="p-6 text-slate-500 text-xs font-bold font-mono">
-                    <div className="flex items-center gap-2">
-                      <CalendarRange size={14} className="text-slate-400" />
-                      {item.startDate} / {item.endDate}
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <span className={`flex items-center gap-2 font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-lg border w-fit ${
-                      item.status === "Active" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                      item.status === "Scheduled" ? "bg-orange-50 text-orange-600 border-orange-100" :
-                      "bg-rose-50 text-rose-600 border-rose-100"
-                    }`}>
-                      {item.status === "Active" ? <CheckCircle2 size={12} /> : item.status === "Scheduled" ? <CalendarRange size={12} /> : <XCircle size={12} />}
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="p-6 pr-10 relative">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === item.id ? null : item.id); }}
-                      className={`p-2 rounded-xl transition-all ${activeMenu === item.id ? 'bg-slate-800 text-white shadow-lg' : 'hover:bg-slate-200 text-slate-400 hover:text-slate-600'}`}
-                    >
-                      <MoreVertical size={20} />
-                    </button>
-
-                    <AnimatePresence>
-                      {activeMenu === item.id && (
-                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-12 top-14 bg-white border border-slate-200 rounded-2xl shadow-2xl w-48 overflow-hidden z-[50] py-1">
-                          <button className="w-full px-4 py-3 hover:bg-slate-50 flex items-center gap-3 text-xs font-bold text-slate-600 transition-colors"><Eye size={14} /> Audit Details</button>
-                          <button onClick={() => openModal(item)} className="w-full px-4 py-3 hover:bg-slate-50 flex items-center gap-3 text-xs font-bold text-slate-600 transition-colors"><Edit size={14} /> Update Config</button>
-                          <div className="border-t border-slate-100 my-1" />
-                          <button onClick={() => handleDelete(item.id)} className="w-full px-4 py-3 hover:bg-rose-50 flex items-center gap-3 text-xs font-bold text-rose-600 transition-colors"><Trash2 size={14} /> Purge Record</button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filteredData.length === 0 && (
-          <div className="p-20 text-center text-slate-400 font-black uppercase tracking-[0.3em] text-xs">No Matching Architectures Found</div>
-        )}
-      </div>
-
-      {/* CONFIGURATION MODAL */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[1000] p-4">
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} className="bg-white w-full max-w-2xl rounded-[48px] p-10 border border-slate-200 shadow-2xl relative overflow-hidden">
-              <div className="flex items-center justify-between mb-10">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">{editingItem ? 'Edit Profile' : 'Init Assortment'}</h2>
-                  <p className="text-slate-500 font-bold text-sm mt-1">Configure product allocations and store lifecycle</p>
+                            {activeMenu === a.id && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)}></div>
+                                <div className="absolute right-8 top-10 w-40 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50 py-1 text-left">
+                                  <button className="w-full px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm text-slate-700 font-medium">
+                                    <Eye size={16} className="text-slate-400" /> View Items
+                                  </button>
+                                  <button className="w-full px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm text-slate-700 font-medium">
+                                    <Edit size={16} className="text-slate-400" /> Edit Config
+                                  </button>
+                                  <div className="h-px bg-slate-100 my-1"></div>
+                                  <button className="w-full px-4 py-2 hover:bg-rose-50 flex items-center gap-3 text-sm text-rose-600 font-bold">
+                                    <Trash2 size={16} /> Delete
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                         </td>
+                      </motion.tr>
+                   ))}
+                </tbody>
+             </table>
+             {filteredAssortments.length === 0 && (
+                <div className="px-6 py-16 text-center text-slate-500">
+                   <div className="flex flex-col items-center justify-center">
+                      <Box size={32} className="text-slate-300 mb-3" />
+                      <p className="font-bold text-slate-700 text-lg">No assortments found</p>
+                      <p className="text-sm mt-1">Adjust your search or create a new collection.</p>
+                   </div>
                 </div>
-                <button onClick={closeModal} className="w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-800 transition-all flex items-center justify-center"><X size={24} /></button>
+             )}
+          </div>
+
+          {/* Table Footer */}
+          <div className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between shrink-0 rounded-b-2xl">
+            <span className="text-sm font-medium text-slate-500">Showing {filteredAssortments.length} assortments</span>
+            <div className="flex gap-2">
+              <button className="px-3 py-1.5 border border-slate-200 rounded-md text-sm font-bold text-slate-400 cursor-not-allowed">Previous</button>
+              <button className="px-3 py-1.5 border border-slate-200 rounded-md text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">Next</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Slide-Over Modal for Creating Assortment */}
+      {showModal && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+          <div className="relative w-full sm:w-[480px] h-screen bg-white shadow-2xl flex flex-col animate-in slide-in-from-right border-l border-slate-200">
+            
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
+              <div>
+                 <h2 className="text-xl font-black text-slate-900">Create Assortment</h2>
+                 <p className="text-sm font-medium text-slate-500 mt-0.5">Bundle products for stores or events.</p>
               </div>
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"><X size={20}/></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+               <form id="assortmentForm" onSubmit={handleSave} className="space-y-5">
+                  <div className="space-y-2">
+                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Assortment Name <span className="text-rose-500">*</span></label>
+                     <input
+                        required type="text" value={formData.name} placeholder="e.g. Diwali Electronics Bundle"
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full h-11 px-4 font-semibold text-slate-900 bg-white border border-slate-300 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+                     />
+                  </div>
 
-              <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Portfolio Identity</label>
-                  <input required type="text" placeholder="e.g. Winter Staples 2026" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-black text-slate-700" value={formData.assortmentName} onChange={(e) => setFormData({ ...formData, assortmentName: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Target Node (Store)</label>
-                  <input required type="text" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700" value={formData.store} onChange={(e) => setFormData({ ...formData, store: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Industry Class</label>
-                  <input required type="text" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Product Volume</label>
-                  <input required type="number" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-black text-slate-700" value={formData.products} onChange={(e) => setFormData({ ...formData, products: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Lifecycle Phase</label>
-                  <select className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-black text-slate-700 appearance-none" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                    <option value="Active">ACTIVE</option>
-                    <option value="Scheduled">SCHEDULED</option>
-                    <option value="Expired">EXPIRED</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Start Sync</label>
-                  <input required type="date" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 uppercase" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Termination Date</label>
-                  <input required type="date" className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-5 outline-none focus:ring-2 focus:ring-indigo-100 font-bold text-slate-700 uppercase" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
-                </div>
-                <button type="submit" className="md:col-span-2 w-full h-16 rounded-[24px] bg-indigo-600 hover:bg-indigo-700 text-white font-black tracking-widest uppercase transition-all shadow-xl shadow-indigo-100 mt-4 flex items-center justify-center gap-3">
-                  <CheckCircle2 size={22} /> {editingItem ? 'Update Configuration' : 'Deploy Architecture'}
-                </button>
-              </form>
-            </motion.div>
+                  <div className="space-y-2">
+                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Category <span className="text-rose-500">*</span></label>
+                     <select
+                        value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full h-11 px-4 font-semibold text-slate-900 bg-white border border-slate-300 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm appearance-none"
+                     >
+                        <option>Seasonal</option>
+                        <option>Store Allocation</option>
+                        <option>Promotional</option>
+                        <option>B2B Custom</option>
+                        <option>Bundles</option>
+                     </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Est. SKU Count</label>
+                        <input
+                           required type="number" min="0" value={formData.items} placeholder="0"
+                           onChange={(e) => setFormData({ ...formData, items: e.target.value })}
+                           className="w-full h-11 px-4 font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+                        />
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Est. Value (₹)</label>
+                        <input
+                           required type="number" min="0" value={formData.value} placeholder="0.00"
+                           onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                           className="w-full h-11 px-4 font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+                        />
+                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Initial Status</label>
+                     <select
+                        value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-full h-11 px-4 font-semibold text-slate-900 bg-white border border-slate-300 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm appearance-none"
+                     >
+                        <option>Draft</option>
+                        <option>Active</option>
+                     </select>
+                  </div>
+               </form>
+            </div>
+
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-4 shrink-0">
+               <button type="button" onClick={() => setShowModal(false)} className="flex-1 h-12 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-colors shadow-sm">
+                  Cancel
+               </button>
+               <button type="submit" form="assortmentForm" className="flex-1 h-12 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-md transition-colors">
+                  Create Collection
+               </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
-
+        </div>
+      )}
     </div>
   );
 };

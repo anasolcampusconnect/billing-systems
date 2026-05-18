@@ -1,233 +1,337 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
-  Moon, Search, Plus, MoreVertical, X, FileText, Printer, 
-  CheckCircle2, AlertTriangle, Filter, Download, 
-  TrendingUp, Wallet, Banknote, Calendar, CheckCircle
+  IndianRupee, CreditCard, QrCode, Calculator, 
+  FileText, AlertCircle, CheckCircle2, Lock, Printer, Calendar, Loader2 
 } from 'lucide-react';
 
 const EndOfDay = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
-
-  // 1. Static Data for Past EOD Statements
-  const [eodData, setEodData] = useState([
-    { id: 'EOD-0514', date: '14 May 2026', totalSales: 124500, expectedCash: 45000, actualCash: 45000, diff: 0, status: 'Settled', manager: 'Admin' },
-    { id: 'EOD-0513', date: '13 May 2026', totalSales: 98200, expectedCash: 32500, actualCash: 32350, diff: -150, status: 'Shortage', manager: 'Admin' },
-    { id: 'EOD-0512', date: '12 May 2026', totalSales: 105600, expectedCash: 41200, actualCash: 41250, diff: 50, status: 'Overage', manager: 'Admin' },
-    { id: 'EOD-0511', date: '11 May 2026', totalSales: 112000, expectedCash: 38000, actualCash: 38000, diff: 0, status: 'Settled', manager: 'Admin' },
-  ]);
-
-  const [formData, setFormData] = useState({ actualCash: '', notes: '' });
-
-  // Dummy expected values
-  const todayExpectedSales = 85400;
-  const todayExpectedCash = 24500;
-
-  // 2. Logic
-  const filteredData = useMemo(() => {
-    const q = searchTerm.toLowerCase().trim();
-    return eodData.filter(item => 
-      item.date.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
-    );
-  }, [eodData, searchTerm]);
-
-  const handleSave = (e) => {
-    e.preventDefault();
-    const actualVal = parseFloat(formData.actualCash) || 0;
-    const difference = actualVal - todayExpectedCash;
-    let newStatus = 'Settled';
-    if (difference < 0) newStatus = 'Shortage';
-    if (difference > 0) newStatus = 'Overage';
-
-    const newDate = new Date();
-    const newEOD = {
-      id: `EOD-${String(newDate.getMonth()+1).padStart(2,'0')}${String(newDate.getDate()).padStart(2,'0')}`,
-      date: newDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      totalSales: todayExpectedSales,
-      expectedCash: todayExpectedCash,
-      actualCash: actualVal,
-      diff: difference,
-      status: newStatus,
-      manager: 'Active Staff'
-    };
-    setEodData([newEOD, ...eodData]);
-    setShowAddModal(false);
-    setFormData({ actualCash: '', notes: '' });
+  // --- MOCK DAILY AGGREGATES ---
+  const todayDate = new Date();
+  const todayFormatted = todayDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  
+  const dailyStats = {
+    grossSales: 145250.00,
+    refunds: 2500.00,
+    netSales: 142750.00,
+    totalTransactions: 128,
   };
 
-  return (
-    <div className="space-y-6 font-plus-jakarta" onClick={() => setActiveDropdown(null)}>
-      
-      {/* 1. DAILY SETTLEMENT SUMMARY */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
-           <div>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Expected In-Drawer</p>
-              <h3 className="text-2xl font-black text-slate-800 font-mono mt-1">₹{todayExpectedCash.toLocaleString()}</h3>
-           </div>
-           <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100"><Banknote size={20}/></div>
-        </div>
-        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
-           <div>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Gross Sales (Today)</p>
-              <h4 className="text-2xl font-black text-slate-800 font-mono mt-1">₹{todayExpectedSales.toLocaleString()}</h4>
-           </div>
-           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100"><TrendingUp size={20}/></div>
-        </div>
-        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
-           <div>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Pending Settlements</p>
-              <h4 className="text-2xl font-black text-amber-600 mt-1">01 <span className="text-xs font-bold uppercase tracking-normal">Terminal</span></h4>
-           </div>
-           <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100"><Moon size={20}/></div>
-        </div>
-      </div>
+  const expectedPayments = {
+    cash: 45200.00,
+    upi: 65050.00,
+    card: 32500.00
+  };
 
-      {/* 2. COMMAND TOOLBAR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <div className="relative group min-w-[350px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-               type="text" 
-               placeholder="Search by Report ID or Date..." 
-               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/20" 
-               value={searchTerm} 
-               onChange={(e)=>setSearchTerm(e.target.value)} 
-            />
-          </div>
-          <button className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 transition-all"><Calendar size={18}/></button>
-          <button className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 transition-all"><Download size={18}/></button>
+  // --- COMPONENT STATE ---
+  const [actualCash, setActualCash] = useState(expectedPayments.cash.toString());
+  const [notes, setNotes] = useState('');
+  
+  // Status States
+  const [registerStatus, setRegisterStatus] = useState('OPEN'); // 'OPEN' or 'CLOSED'
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // --- CALCULATIONS ---
+  const parsedActualCash = parseFloat(actualCash) || 0;
+  const cashDifference = parsedActualCash - expectedPayments.cash;
+  const isBalanced = cashDifference === 0;
+
+  // --- BUTTON 1: DOWNLOAD X-REPORT ---
+  const handleDownloadXReport = () => {
+    const reportContent = `
+=========================================
+          X-REPORT (MID-DAY)
+=========================================
+Date: ${todayFormatted}
+Time: ${new Date().toLocaleTimeString('en-IN')}
+Status: ${registerStatus}
+
+--- SALES METRICS ---
+Gross Sales : ₹${dailyStats.grossSales.toFixed(2)}
+Refunds     : -₹${dailyStats.refunds.toFixed(2)}
+Net Sales   : ₹${dailyStats.netSales.toFixed(2)}
+Total Txns  : ${dailyStats.totalTransactions}
+
+--- EXPECTED TENDERS ---
+Cash in Till: ₹${expectedPayments.cash.toFixed(2)}
+UPI / Wallet: ₹${expectedPayments.upi.toFixed(2)}
+Card (POS)  : ₹${expectedPayments.card.toFixed(2)}
+
+=========================================
+* X-Report is a snapshot and does not 
+  close the batch or zero the terminal.
+=========================================`;
+
+    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `X_Report_${todayDate.toISOString().split('T')[0]}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // --- BUTTON 2: CLOSE REGISTER & BATCH ---
+  const handleCloseRegister = async () => {
+    // 1. Validation
+    setErrorMsg('');
+    if (!isBalanced && notes.trim() === '') {
+      setErrorMsg("Cash discrepancy detected. You must provide a reason in the notes before closing.");
+      return;
+    }
+
+    // 2. Set Loading State
+    setIsSubmitting(true);
+
+    // 3. Construct Payload for Backend
+    const payload = {
+      date: todayDate.toISOString(),
+      expectedCash: expectedPayments.cash,
+      actualCash: parsedActualCash,
+      discrepancy: cashDifference,
+      notes: notes,
+      netSales: dailyStats.netSales
+    };
+
+    try {
+      // ==========================================
+      // REPLACE THIS SETTIMEOUT WITH YOUR API CALL
+      // Example: await axios.post('/api/reports/z-report', payload);
+      // ==========================================
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulating 2-second network request
+      
+      // 4. Handle Success
+      setRegisterStatus('CLOSED');
+      
+    } catch (error) {
+      // 5. Handle Failure
+      setErrorMsg("Failed to connect to the server. Please try again.");
+      console.error("Z-Report Submission Failed:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const inputClass = "w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed";
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans p-6 lg:p-10">
+      
+      {/* PAGE HEADER */}
+      <div className="max-w-[1200px] mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+            <FileText className="text-indigo-600" size={32} />
+            End of Day Statement
+          </h1>
+          <p className="text-slate-500 font-medium flex items-center gap-2 mt-2">
+            <Calendar size={16} /> {todayFormatted} — 
+            {registerStatus === 'OPEN' ? (
+               <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Register: OPEN</span>
+            ) : (
+               <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">Register: CLOSED</span>
+            )}
+          </p>
         </div>
-        <button onClick={() => setShowAddModal(true)} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black px-8 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 transition-all text-xs tracking-widest">
-          <CheckCircle2 size={18} strokeWidth={3}/> RUN TODAY'S EOD
+        
+        <button 
+          onClick={handleDownloadXReport}
+          className="bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold py-3 px-6 rounded-2xl flex items-center gap-2 shadow-sm transition-all"
+        >
+          <Printer size={18} /> Download X-Report
         </button>
       </div>
 
-      {/* 3. SETTLEMENT REGISTRY */}
-      <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
-         <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50 text-slate-400 font-bold uppercase tracking-[0.15em] border-b border-slate-100">
-               <tr>
-                  <th className="p-5 pl-10">Report Identity</th>
-                  <th className="p-5 text-right">Gross Sales</th>
-                  <th className="p-5 text-right">Actual Drawer</th>
-                  <th className="p-5 text-right">Discrepancy</th>
-                  <th className="p-5 text-center">Settlement</th>
-                  <th className="p-5 pr-10"></th>
-               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-               {filteredData.map(item => (
-                 <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="p-5 pl-10">
-                       <div>
-                          <p className="text-sm font-black text-slate-800">{item.date}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 tracking-tighter">{item.id} • Managed by {item.manager}</p>
-                       </div>
-                    </td>
-                    <td className="p-5 text-right font-black text-slate-400 text-sm font-mono">₹{item.totalSales.toLocaleString()}</td>
-                    <td className="p-5 text-right font-black text-slate-700 text-sm font-mono">₹{item.actualCash.toLocaleString()}</td>
-                    <td className="p-5 text-right font-black text-sm">
-                       {item.diff === 0 ? (
-                          <span className="text-slate-400 font-mono">₹0</span>
-                       ) : item.diff > 0 ? (
-                          <span className="text-amber-500 font-mono">+₹{Math.abs(item.diff)}</span>
-                       ) : (
-                          <span className="text-rose-500 font-mono">-₹{Math.abs(item.diff)}</span>
-                       )}
-                    </td>
-                    <td className="p-5 text-center">
-                       <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase inline-flex items-center gap-1.5 border ${
-                        item.status === 'Settled' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                        item.status === 'Shortage' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        'bg-amber-50 text-amber-600 border-amber-100'
-                      }`}>
-                        {item.status === 'Settled' ? <CheckCircle size={10}/> : <AlertTriangle size={10}/>}
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-5 pr-10 text-right relative">
-                       <button 
-                         onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === item.id ? null : item.id); }}
-                         className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
-                       >
-                          <MoreVertical size={16}/>
-                       </button>
-
-                       <AnimatePresence>
-                         {activeDropdown === item.id && (
-                           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="absolute right-10 top-12 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden text-left" onClick={(e)=>e.stopPropagation()}>
-                              <button className="w-full px-4 py-2.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"><FileText size={14}/> Full Audit</button>
-                              <button className="w-full px-4 py-2.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"><Printer size={14}/> Z-Report</button>
-                           </motion.div>
-                         )}
-                       </AnimatePresence>
-                    </td>
-                 </tr>
-               ))}
-            </tbody>
-         </table>
-         {filteredData.length === 0 && (
-            <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No Settlement Records Found</div>
-         )}
-      </div>
-
-      {/* 4. RUN EOD MODAL */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white border border-slate-200 rounded-[40px] shadow-2xl w-full max-w-md p-10 z-[110]">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Shift Settlement</h3>
-                <button onClick={() => setShowAddModal(false)} className="bg-slate-50 p-3 rounded-full text-slate-400 hover:text-slate-800"><X size={20} /></button>
-              </div>
-              
-              <form onSubmit={handleSave} className="space-y-6">
-                <div className="bg-slate-50 border border-slate-200 p-5 rounded-3xl flex justify-between items-center shadow-inner">
-                   <div>
-                      <p className="text-[10px] uppercase text-slate-400 font-black tracking-widest mb-1">System Expected</p>
-                      <p className="text-2xl text-emerald-600 font-black font-mono">₹{todayExpectedCash.toLocaleString()}</p>
-                   </div>
-                   <div className="text-right">
-                      <p className="text-[10px] uppercase text-slate-400 font-black tracking-widest mb-1">Total Sales</p>
-                      <p className="text-sm text-slate-500 font-black font-mono">₹{todayExpectedSales.toLocaleString()}</p>
-                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-2">Actual Counted Cash (₹)</label>
-                  <input 
-                    type="number" required min="0" placeholder="Enter Cash in Drawer"
-                    className="w-full bg-slate-50 border-2 border-emerald-100 rounded-2xl p-4 text-slate-800 outline-none focus:border-emerald-500 font-black text-xl shadow-inner" 
-                    value={formData.actualCash} 
-                    onChange={(e)=>setFormData({...formData, actualCash: e.target.value})} 
-                  />
-                  
-                  {formData.actualCash && (
-                     <div className="mt-3 px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-bold">
-                        {parseFloat(formData.actualCash) - todayExpectedCash === 0 ? (
-                           <span className="text-emerald-600 uppercase flex items-center gap-1"><CheckCircle2 size={12}/> Cash is perfectly balanced</span>
-                        ) : parseFloat(formData.actualCash) - todayExpectedCash < 0 ? (
-                           <span className="text-rose-600 uppercase flex items-center gap-1"><AlertTriangle size={12}/> Shortage detected: ₹{Math.abs(parseFloat(formData.actualCash) - todayExpectedCash)}</span>
-                        ) : (
-                           <span className="text-amber-600 uppercase flex items-center gap-1"><AlertTriangle size={12}/> Overage detected: ₹{Math.abs(parseFloat(formData.actualCash) - todayExpectedCash)}</span>
-                        )}
-                     </div>
-                  )}
-                </div>
-
-                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-5 rounded-[24px] shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2 mt-4 transition-all">
-                   <CheckCircle2 size={18}/> CONFIRM SETTLEMENT
-                </button>
-              </form>
-            </motion.div>
+      <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* LEFT COLUMN: SUMMARY & DIGITAL PAYMENTS */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="lg:col-span-2 space-y-6"
+        >
+          {/* Sales Overview Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Gross Sales</p>
+              <h3 className="text-2xl font-black font-mono text-slate-800">₹{(dailyStats.grossSales/1000).toFixed(1)}k</h3>
+            </div>
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Refunds</p>
+              <h3 className="text-2xl font-black font-mono text-rose-500">-₹{dailyStats.refunds}</h3>
+            </div>
+            <div className="bg-white p-6 rounded-3xl border border-indigo-100 shadow-sm bg-indigo-50/30">
+              <p className="text-[11px] font-black text-indigo-400 uppercase tracking-widest mb-1">Net Sales</p>
+              <h3 className="text-2xl font-black font-mono text-indigo-700">₹{(dailyStats.netSales/1000).toFixed(1)}k</h3>
+            </div>
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Txn Count</p>
+              <h3 className="text-2xl font-black font-mono text-slate-800">{dailyStats.totalTransactions}</h3>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
 
+          {/* System Recorded Payments */}
+          <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight mb-6 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Calculator size={18} className="text-slate-400" /> System Expected Tenders
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl shadow-sm"><IndianRupee size={20} className="text-emerald-600"/></div>
+                  <div>
+                    <p className="font-bold text-slate-800">Cash in Drawer</p>
+                    <p className="text-xs text-slate-500 font-medium">Expected physical currency</p>
+                  </div>
+                </div>
+                <span className="text-xl font-black font-mono text-slate-800">₹{expectedPayments.cash.toFixed(2)}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl shadow-sm"><QrCode size={20} className="text-indigo-600"/></div>
+                  <div>
+                    <p className="font-bold text-slate-800">UPI / Wallets</p>
+                    <p className="text-xs text-slate-500 font-medium">Auto-reconciled</p>
+                  </div>
+                </div>
+                <span className="text-xl font-black font-mono text-slate-800">₹{expectedPayments.upi.toFixed(2)}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl shadow-sm"><CreditCard size={20} className="text-blue-600"/></div>
+                  <div>
+                    <p className="font-bold text-slate-800">Card (POS)</p>
+                    <p className="text-xs text-slate-500 font-medium">Auto-reconciled</p>
+                  </div>
+                </div>
+                <span className="text-xl font-black font-mono text-slate-800">₹{expectedPayments.card.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* RIGHT COLUMN: CASH RECONCILIATION & CLOSING */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm h-full flex flex-col relative overflow-hidden">
+            
+            {/* SUCCESS OVERLAY IF CLOSED */}
+            {registerStatus === 'CLOSED' && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-6 text-center">
+                <div className="bg-emerald-100 p-4 rounded-full mb-4">
+                   <CheckCircle2 size={48} className="text-emerald-600" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Shift Closed</h3>
+                <p className="text-slate-500 font-medium mb-6">Z-Report has been generated and saved to the database.</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-2xl transition-all"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            )}
+
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight mb-6 border-b border-slate-100 pb-3">
+              Cash Reconciliation
+            </h3>
+
+            {/* ERROR MESSAGE DISPLAY */}
+            {errorMsg && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-sm font-medium flex items-start gap-2">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Input Actual Cash */}
+            <div className="mb-6">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                Actual Cash Counted (₹)
+              </label>
+              <input 
+                type="number" 
+                value={actualCash}
+                onChange={(e) => setActualCash(e.target.value)}
+                disabled={isSubmitting || registerStatus === 'CLOSED'}
+                className={`${inputClass} text-2xl font-black font-mono py-4 text-center ${!isBalanced ? 'bg-orange-50 border-orange-200 focus:border-orange-500 focus:ring-orange-500/20' : 'bg-emerald-50 border-emerald-200 focus:border-emerald-500 focus:ring-emerald-500/20'}`}
+                placeholder="0.00"
+              />
+            </div>
+
+            {/* Discrepancy Alert */}
+            <div className={`p-4 rounded-2xl border flex items-start gap-3 mb-6 ${
+                isBalanced 
+                  ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
+                  : 'bg-orange-50 border-orange-200 text-orange-800'
+              }`}
+            >
+              {isBalanced ? <CheckCircle2 size={24} className="text-emerald-600 shrink-0"/> : <AlertCircle size={24} className="text-orange-600 shrink-0"/>}
+              <div>
+                <p className="font-black text-sm uppercase tracking-wide">
+                  {isBalanced ? 'Till is Balanced' : 'Discrepancy Detected'}
+                </p>
+                <p className={`font-mono font-bold text-lg mt-1 ${isBalanced ? 'text-emerald-600' : 'text-orange-600'}`}>
+                  {isBalanced ? '₹0.00' : `${cashDifference > 0 ? '+' : ''}₹${cashDifference.toFixed(2)}`}
+                </p>
+                {!isBalanced && (
+                  <p className="text-xs font-medium opacity-80 mt-1">
+                    {cashDifference > 0 ? 'Cash overage. Check for unrecorded sales.' : 'Cash shortage. Check for missed tender or incorrect change.'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Discrepancy Notes */}
+            {!isBalanced && (
+              <div className="mb-6 flex-grow">
+                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                  Discrepancy Reason *
+                </label>
+                <textarea 
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={isSubmitting || registerStatus === 'CLOSED'}
+                  className={`${inputClass} resize-none h-24`}
+                  placeholder="Explain the shortage/overage..."
+                ></textarea>
+              </div>
+            )}
+
+            {/* Action Button */}
+            <div className="mt-auto pt-6 border-t border-slate-100">
+              <button 
+                onClick={handleCloseRegister}
+                disabled={isSubmitting || registerStatus === 'CLOSED'}
+                className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white font-black tracking-widest text-[11px] uppercase py-5 rounded-[20px] flex items-center justify-center gap-3 transition-all shadow-xl shadow-slate-200 disabled:shadow-none"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    CLOSING BATCH...
+                  </>
+                ) : (
+                  <>
+                    <Lock size={18} strokeWidth={3} />
+                    CLOSE REGISTER & BATCH
+                  </>
+                )}
+              </button>
+            </div>
+            
+          </div>
+        </motion.div>
+
+      </div>
     </div>
   );
 };
