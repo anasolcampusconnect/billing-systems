@@ -193,9 +193,9 @@ const Assortments = () => {
                               {a.status}
                             </span>
                          </td>
-                         <td className="px-6 py-4 text-right font-mono font-black text-base text-slate-900 truncate">
-                            {formatCurrency(a.value)}
-                         </td>
+                         <td className="px-6 py-4 text-right font-mono font-black text-base text-slate-900">
+   {formatCurrency(a.value)}
+</td>
                          <td className="px-6 py-4 text-center relative">
                             <button
                               onClick={() => setActiveMenu(activeMenu === a.id ? null : a.id)}
